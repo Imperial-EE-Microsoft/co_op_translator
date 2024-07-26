@@ -12,37 +12,45 @@ Remember to activate the virtual environment every time you work on the project 
 
 ## Project Structure
 
-```dotnetcli
+```text
 microsoft_translation_public/
 │
-├── analyzed_images/
-├── bounding_boxes/
-├── comparison_images/
-├── images/
-├── translated_images/
+├── data/
+│   ├── images/
+│   ├── analyzed_images/
+│   ├── bounding_boxes/
+│   └── translated_images/
 │
 ├── src/
 │   ├── __init__.py
-│   ├── config.py
+│   ├── config/
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   ├── development.py
+│   │   └── production.py
 │   ├── image_translator/
 │   │   ├── __init__.py
-│   │   ├── azure_vision.py
+│   │   ├── azure_vision_translator.py
 │   ├── text_translator/
 │   │   ├── __init__.py
-│   │   ├── openai_translation.py
-│   ├── utils.py
+│   │   ├── openai_translator.py
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   ├── image_utils.py
 │   └── main.py
 │
 ├── tests/
 │   ├── __init__.py
-│   ├── test_image_translator/
+│   ├── image_translator/
 │   │   ├── __init__.py
-│   │   ├── test_azure_vision.py
-│   ├── test_text_translator/
+│   │   ├── test_azure_vision_translator.py
+│   ├── text_translator/
 │   │   ├── __init__.py
-│   │   ├── test_openai_translation.py
-│   ├── test_utils.py
-│   └── test_main.py
+│   │   ├── test_openai_translator.py
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   ├── test_image_utils.py
+│   └── test_integration.py
 │
 ├── .env.template
 ├── .gitignore
@@ -50,5 +58,6 @@ microsoft_translation_public/
 ├── README.md
 ├── requirements.txt
 └── setup.py
+
 
 ```
