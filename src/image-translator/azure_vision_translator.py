@@ -13,7 +13,7 @@ def get_computervision_client(endpoint, subscription_key):
 def get_image_analysis_client(endpoint, subscription_key):
     return ImageAnalysisClient(endpoint, AzureKeyCredential(subscription_key))
 
-def extract_text_computervision(client, image_path):
+def extract_line_bounding_boxes(client, image_path):
     with open(image_path, "rb") as image_stream:
         ocr_result = client.read_in_stream(image_stream, raw=True)
     operation_location = ocr_result.headers["Operation-Location"]

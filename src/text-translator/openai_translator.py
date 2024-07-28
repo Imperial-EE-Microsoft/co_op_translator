@@ -2,11 +2,11 @@ import re
 from openai import AzureOpenAI
 from src.config.base import Config
 
-def get_openai_client(api_base, api_key, deployment_name, api_version):
+def get_openai_client():
     return AzureOpenAI(
-        api_key=api_key,
-        api_version=api_version,
-        base_url=f"{api_base}/openai/deployments/{deployment_name}"
+        api_key=Config.OPENAI_KEY,
+        api_version=Config.API_VERSION,
+        base_url=f"{Config.OPENAI_BASE}/openai/deployments/{Config.DEPLOYMENT_NAME}"
     )
 
 def gen_image_translation_prompt(text_data, language):
@@ -28,7 +28,8 @@ def extract_yaml_lines(message):
     yaml_lines = [line[2:] for line in lines if line.startswith('- ')]
     return yaml_lines
 
-def translate_text(client, text_data, language):
+def translate_text(text_data, language):
+    client = get_openai_client()
     prompt = gen_image_translation_prompt(text_data, language)
     response = client.chat.completions.create(
         model="gpt-4o",
