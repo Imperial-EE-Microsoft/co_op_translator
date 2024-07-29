@@ -21,43 +21,36 @@ microsoft_translation_public/
 │   ├── bounding_boxes/
 │   └── translated_images/
 │
+├── fonts/
+│   └── NotoSans-Medium.ttf
+│
 ├── src/
-│   ├── __init__.py
 │   ├── config/
 │   │   ├── __init__.py
 │   │   ├── base.py
 │   │   ├── development.py
 │   │   └── production.py
 │   ├── image_translator/
-│   │   ├── __init__.py
 │   │   ├── azure_vision_translator.py
 │   ├── text_translator/
-│   │   ├── __init__.py
 │   │   ├── openai_translator.py
 │   ├── utils/
-│   │   ├── __init__.py
 │   │   ├── image_utils.py
 │   └── main.py
 │
 ├── tests/
-│   ├── __init__.py
 │   ├── image_translator/
-│   │   ├── __init__.py
 │   │   ├── test_azure_vision_translator.py
 │   ├── text_translator/
-│   │   ├── __init__.py
 │   │   ├── test_openai_translator.py
 │   ├── utils/
-│   │   ├── __init__.py
 │   │   ├── test_image_utils.py
 │   └── test_integration.py
 │
 ├── .env.template
 ├── .gitignore
-├── NotoSans-Medium.ttf
 ├── README.md
 ├── requirements.txt
 └── setup.py
-
 
 ```
