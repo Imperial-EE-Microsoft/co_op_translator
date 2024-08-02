@@ -1,3 +1,8 @@
+"""
+This module contains functions to interact with the Azure Computer Vision and Image Analysis APIs.
+It provides functionalities to extract text and bounding boxes from images.
+"""
+
 import time
 from azure.cognitiveservices.vision.computervision import ComputerVisionClient
 from azure.ai.vision.imageanalysis import ImageAnalysisClient
@@ -8,12 +13,45 @@ from msrest.authentication import CognitiveServicesCredentials
 from src.config.base import Config
 
 def get_computervision_client(endpoint, subscription_key):
+    """
+    Initialize and return a Computer Vision Client.
+    
+    Args:
+        endpoint (str): The endpoint of the Azure Computer Vision service.
+        subscription_key (str): The subscription key for the Azure Computer Vision service.
+    
+    Returns:
+        ComputerVisionClient: The initialized client.
+    """
     return ComputerVisionClient(endpoint, CognitiveServicesCredentials(subscription_key))
 
 def get_image_analysis_client(endpoint, subscription_key):
+    """
+    Initialize and return an Image Analysis Client.
+    
+    Args:
+        endpoint (str): The endpoint of the Azure Image Analysis service.
+        subscription_key (str): The subscription key for the Azure Image Analysis service.
+    
+    Returns:
+        ImageAnalysisClient: The initialized client.
+    """
     return ImageAnalysisClient(endpoint, AzureKeyCredential(subscription_key))
 
 def extract_line_bounding_boxes(client, image_path):
+    """
+    Extract line bounding boxes from an image using Azure Computer Vision.
+    
+    Args:
+        client (ComputerVisionClient): The initialized Computer Vision client.
+        image_path (str): Path to the image file.
+    
+    Returns:
+        list: List of dictionaries containing text, bounding box coordinates, and confidence scores.
+    
+    Raises:
+        Exception: If the OCR operation did not succeed.
+    """
     with open(image_path, "rb") as image_stream:
         ocr_result = client.read_in_stream(image_stream, raw=True)
     operation_location = ocr_result.headers["Operation-Location"]
@@ -38,6 +76,19 @@ def extract_line_bounding_boxes(client, image_path):
         raise Exception("OCR operation did not succeed.")
 
 def extract_text_imageanalysis(client, image_path):
+    """
+    Extract text and bounding boxes from an image using Azure Image Analysis.
+    
+    Args:
+        client (ImageAnalysisClient): The initialized Image Analysis client.
+        image_path (str): Path to the image file.
+    
+    Returns:
+        list: List of dictionaries containing text, bounding box coordinates, and confidence scores.
+    
+    Raises:
+        Exception: If no text was recognized in the image.
+    """
     with open(image_path, "rb") as image_stream:
         image_data = image_stream.read()
         result = client.analyze(
@@ -58,5 +109,14 @@ def extract_text_imageanalysis(client, image_path):
         raise Exception("No text was recognized in the image.")
 
 def extract_text_from_image(image_path):
-    client = get_image_analysis_client(Config.AZURE_ENDPOINT, Config.AZURE_SUBSCRIPTION_KEY)
+    """
+    Extract text from an image using Azure Image Analysis client.
+    
+    Args:
+        image_path (str): Path to the image file.
+    
+    Returns:
+        list: List of dictionaries containing text, bounding box coordinates, and confidence scores.
+    """
+    client = get_image_analysis_client(Config.AZURE_VISION_ENDPOINT, Config.AZURE_SUBSCRIPTION_KEY)
     return extract_text_imageanalysis(client, image_path)

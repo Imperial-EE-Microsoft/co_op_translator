@@ -1,3 +1,8 @@
+"""
+This module contains utility functions for handling images.
+Functions include saving and loading bounding boxes, drawing text on images, and plotting images with bounding boxes.
+"""
+
 import os
 import json
 import cv2
