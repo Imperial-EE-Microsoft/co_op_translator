@@ -4,10 +4,10 @@
 
 ### Create a virtual environment
 
-1. Type the following command inside your terminal to create a virtual environment named *.venv*.
+1. Type the following command inside your terminal to create a virtual environment named *venv*.
 
     ```console
-    python -m venv .venv
+    python -m venv venv
     ```
 
 1. Type the following command inside your terminal to activate the virtual environment.
@@ -15,18 +15,18 @@
     for Windows
 
     ```console
-    .venv\Scripts\activate.bat
+    venv\Scripts\activate.bat
     ```
 
     for Mac / Linux
 
     ```console
-    source .venv/bin/activate
+    source venv/bin/activate
     ```
 
 > [!NOTE]
 >
-> If it worked, you should see *(.venv)* before the command prompt.
+> If it worked, you should see *(venv)* before the command prompt.
 > Remember to activate the virtual environment every time you work on the project by running from the repository's root directory.
 
 ### Install the required packages
