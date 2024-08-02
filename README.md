@@ -2,13 +2,44 @@
 
 ## Setting up the Development Environment
 
-Follow these steps to set up a virtual environment for development:
+### Create a virtual environment
 
-1. Activate the virtual environment by running the command `source venv/bin/activate`.
-2. Install the packages by running the command `pip install -r requirements.txt`.
-3. Fill in the environment variables an `.env` file, filling in the provided `.env.template` as a guide.
+1. Type the following command inside your terminal to create a virtual environment named *.venv*.
 
-Remember to activate the virtual environment every time you work on the project by running `source env/bin/activate` from the repository's root directory.
+    ```console
+    python -m venv .venv
+    ```
+
+1. Type the following command inside your terminal to activate the virtual environment.
+
+    for Windows
+
+    ```console
+    .venv\Scripts\activate.bat
+    ```
+
+    for Mac / Linux
+
+    ```console
+    source .venv/bin/activate
+    ```
+
+> [!NOTE]
+>
+> If it worked, you should see *(.venv)* before the command prompt.
+> Remember to activate the virtual environment every time you work on the project by running from the repository's root directory.
+
+### Install the required packages
+
+1. Type the following commands inside your terminal to install the required packages.
+
+    ```console
+    pip install -r requirements.txt
+    ```
+
+### Add environment variables
+
+1. Fill in the environment variables an `.env` file, filling in the provided `.env.template` as a guide.
 
 ## Project Structure
 
