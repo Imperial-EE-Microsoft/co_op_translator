@@ -6,9 +6,10 @@ load_dotenv()
 # Base configuration class with common settings for all environments
 class Config:
     AZURE_SUBSCRIPTION_KEY = os.getenv("AZURE_SUBSCRIPTION_KEY")
-    AZURE_ENDPOINT = os.getenv("AZURE_ENDPOINT")
-    OPENAI_BASE = os.getenv("OPENAI_BASE")
-    OPENAI_KEY = os.getenv("OPENAI_KEY")
+    # Azure Computer vision Endpoint
+    AZURE_VISION_ENDPOINT = os.getenv("AZURE_VISION_ENDPOINT")
+    AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+    AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_KEY")
     DEPLOYMENT_NAME = 'gpt-4o'
     API_VERSION = '2023-12-01-preview'
 
@@ -19,9 +20,9 @@ class Config:
 # Ensure all necessary environment variables are set
 required_vars = [
     Config.AZURE_SUBSCRIPTION_KEY,
-    Config.AZURE_ENDPOINT,
-    Config.OPENAI_BASE,
-    Config.OPENAI_KEY,
+    Config.AZURE_VISION_ENDPOINT,
+    Config.AZURE_OPENAI_ENDPOINT,
+    Config.AZURE_OPENAI_KEY,
 ]
 
 for var in required_vars:
