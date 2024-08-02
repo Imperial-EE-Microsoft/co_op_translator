@@ -41,6 +41,22 @@
 
 1. Fill in the environment variables an `.env` file, filling in the provided `.env.template` as a guide.
 
+### Install the package in editable mode
+
+1. Type the following command inside your terminal to install the package in editable mode:
+
+    ```console
+    pip install -e .
+    ```
+
+## Running Tests
+
+1. To run tests, make sure your virtual environment is activated, then type the following command:
+
+    ```console
+    pytest tests/
+    ```
+
 ## Project Structure
 
 ```text
