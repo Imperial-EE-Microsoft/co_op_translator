@@ -7,8 +7,7 @@ class TestAzureVisionTranslator(unittest.TestCase):
     def setUp(self):
         self.computervision_client = get_computervision_client(Config.AZURE_VISION_ENDPOINT, Config.AZURE_SUBSCRIPTION_KEY)
         self.image_analysis_client = get_image_analysis_client(Config.AZURE_VISION_ENDPOINT, Config.AZURE_SUBSCRIPTION_KEY)
-        self.image_path = "./data/images/korean.jpg"
-
+        self.image_path = "../../data/images/bicycle.png"
     def test_extract_line_bounding_boxes(self):
         result = extract_line_bounding_boxes(self.computervision_client, self.image_path)
         self.assertIsInstance(result, list)

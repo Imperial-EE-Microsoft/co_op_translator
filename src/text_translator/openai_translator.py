@@ -9,7 +9,7 @@ from src.config.base import Config
 from utils.text_utils import gen_image_translation_prompt, remove_code_backticks, extract_yaml_lines
 
 # Add the src directory to PYTHONPATH
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src')))
 
 def get_openai_client():
     """

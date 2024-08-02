@@ -40,3 +40,6 @@ translation_project.egg-info/
 __pycache__/
 *.py[cod]
 *$py.class
+
+# pytest cache directory
+.pytest_cache/
