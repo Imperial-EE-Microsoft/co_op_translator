@@ -1,6 +1,5 @@
 import unittest
 from src.text_translator.openai_translator import get_openai_client, translate_text
-from src.config.base import Config
 
 class TestOpenAITranslator(unittest.TestCase):
 
