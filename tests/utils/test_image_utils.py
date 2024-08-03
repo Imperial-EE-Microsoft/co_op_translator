@@ -6,13 +6,16 @@ from PIL import Image
 class TestImageUtils(unittest.TestCase):
 
     def setUp(self):
-        self.image_path = "./data/images/korean.jpg"
+        # Get the absolute path of the current file and project root
+        self.project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+        self.image_path = os.path.join(self.project_root, "data/images/korean.png")
+
         self.bounding_boxes = [{
             "text": "Test",
             "bounding_box": [10, 10, 100, 10, 100, 50, 10, 50],
             "confidence": 0.9
         }]
-        self.json_path = "./data/bounding_boxes/test_image.json"
+        self.json_path = os.path.join(self.project_root, "data/bounding_boxes/korean.json")
         self.image = Image.new('RGB', (200, 200), color = (73, 109, 137))
 
     def test_save_and_load_bounding_boxes(self):

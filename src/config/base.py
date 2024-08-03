@@ -11,7 +11,7 @@ class Config:
     AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
     AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_KEY")
     DEPLOYMENT_NAME = 'gpt-4o'
-    API_VERSION = '2024-05-13'
+    API_VERSION = '2023-12-01-preview'
 
     @staticmethod
     def init_app(app):

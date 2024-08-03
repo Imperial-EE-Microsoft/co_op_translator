@@ -9,7 +9,8 @@ class TestAzureVisionTranslator(unittest.TestCase):
         self.computervision_client = get_computervision_client(Config.AZURE_VISION_ENDPOINT, Config.AZURE_SUBSCRIPTION_KEY)
         self.image_analysis_client = get_image_analysis_client(Config.AZURE_VISION_ENDPOINT, Config.AZURE_SUBSCRIPTION_KEY)
         # Set the image path dynamically based on the current file's directory
-        self.image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data/images/korean.png'))
+        self.project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+        self.image_path = os.path.join(self.project_root, "data/images/korean.png")
 
     def test_extract_line_bounding_boxes(self):
         result = extract_line_bounding_boxes(self.computervision_client, self.image_path)
