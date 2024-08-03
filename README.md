@@ -85,6 +85,7 @@ microsoft_translation_public/
 │   │   ├── openai_translator.py
 │   ├── utils/
 │   │   ├── image_utils.py
+│   │   ├── text_utils.py
 │   └── main.py
 │
 ├── tests/
@@ -94,12 +95,15 @@ microsoft_translation_public/
 │   │   ├── test_openai_translator.py
 │   ├── utils/
 │   │   ├── test_image_utils.py
-│   └── test_integration.py
+│   │   ├── test_text_utils.py
+│   └── integration_tests/
+│       ├── integration_test.py
 │
 ├── .env.template
 ├── .gitignore
 ├── README.md
 ├── requirements.txt
+├── setup.cfg
 └── setup.py
 
 ```
