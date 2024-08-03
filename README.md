@@ -101,6 +101,8 @@ microsoft_translation_public/
 │
 ├── .env.template
 ├── .gitignore
+├── conftest.py
+├── pytest.ini
 ├── README.md
 ├── requirements.txt
 ├── setup.cfg
