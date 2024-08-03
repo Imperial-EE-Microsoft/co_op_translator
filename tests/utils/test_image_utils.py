@@ -15,7 +15,7 @@ class TestImageUtils(unittest.TestCase):
             "bounding_box": [10, 10, 100, 10, 100, 50, 10, 50],
             "confidence": 0.9
         }]
-        self.json_path = os.path.join(self.project_root, "data/bounding_boxes/korean.json")
+        self.json_path = os.path.join(self.project_root, "data/bounding_boxes/test.json")
         self.image = Image.new('RGB', (200, 200), color = (73, 109, 137))
 
     def test_save_and_load_bounding_boxes(self):
