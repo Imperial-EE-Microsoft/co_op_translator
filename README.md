@@ -1,4 +1,4 @@
-# image_translation_public
+# translation_public
 
 ## Setting up the Development Environment
 
@@ -39,7 +39,9 @@
 
 ### Add environment variables
 
-1. Fill in the environment variables an `.env` file, filling in the provided `.env.template` as a guide.
+1. Create an `.env` file in the root directory of your project by copying the provided .env.template file. Fill in the environment variables in the `.env` file as a guide.
+
+1. The environment variables will be automatically loaded when you run any script that imports and executes `base.py` from the `src/config` directory.
 
 ### Install the package in editable mode
 
