@@ -1,5 +1,45 @@
 # .gitignore
-venv/
 
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 # ds store
 .DS_Store
+
+# VisualStudioCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+# VisualStudioCode Patch
+# Ignore all local history of files
+.history
+.ionide
+
+# PyCharm
+.idea/
+
+# Egg info
+translation_project.egg-info/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# pytest cache directory
+.pytest_cache/
