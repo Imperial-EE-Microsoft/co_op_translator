@@ -129,41 +129,62 @@ def create_filled_polygon_mask(bounding_box, image_size, fill_color):
     mask_draw.polygon(pts, fill=fill_color)
     return mask_image
 
-def plot_annotated_image(image_path, line_bounding_boxes, translated_text_list):
-    """
-    Plot annotated image with translated text.
+# Function to Plot Bounding Boxes on Image. Set display=True to display the image in a notebook.
+# Saves images to ./analyzed_images
+def plot_bounding_boxes(image_path, line_bounding_boxes, display=True):
+    # Create output directory if it doesn't exist
+    os.makedirs('./analyzed_images', exist_ok=True)
     
-    Args:
-        image_path (str): Path to the image file.
-        line_bounding_boxes (list): List of bounding boxes and text data.
-        translated_text_list (list): List of translated texts.
-    """
-    os.makedirs('./translated_images', exist_ok=True)
+    image = Image.open(image_path)
+    draw = ImageDraw.Draw(image)
     
-    image = Image.open(image_path).convert('RGBA')
-    
-    font_size = 40
+    font_size = 20
+
     font = ImageFont.truetype(FontConfig.NOTO_SANS_MEDIUM, font_size)
     
-    for line_info, translated_text in zip(line_bounding_boxes, translated_text_list):
+    for line_info in line_bounding_boxes:
+        print(line_info)
         bounding_box = line_info['bounding_box']
-        bg_color = get_average_color(image, bounding_box)
-        text_color = get_text_color(bg_color)
-        mask_image = create_filled_polygon_mask(bounding_box, image.size, bg_color)
-        image = Image.alpha_composite(image, mask_image)
-        text_image = draw_text_on_image(translated_text, font, text_color)
-        text_image_array = np.array(text_image)
-        warped_text_image = warp_image_to_bounding_box(text_image_array, bounding_box, image.width, image.height)
-        warped_text_image_pil = Image.fromarray(warped_text_image)
-        image = Image.alpha_composite(image, warped_text_image_pil)
+        confidence = line_info['confidence']
+        pts = [(bounding_box[i], bounding_box[i+1]) for i in range(0, len(bounding_box), 2)]
+        
+        # Draw thicker polygon for bounding box with width parameter
+        draw.line(pts + [pts[0]], fill="yellow", width=4)
+        
+        # Coordinates for the text
+        x, y = bounding_box[0], bounding_box[1] - font_size
+
+        # Draw white text outline
+        outline_range = 2
+        for dx in range(-outline_range, outline_range + 1):
+            for dy in range(-outline_range, outline_range + 1):
+                if dx != 0 or dy != 0:
+                    draw.text((x + dx, y + dy), f"{line_info['text']} ({confidence:.2f})", font=font, fill="white")
+
+        # Draw black text
+        draw.text((x, y), f"{line_info['text']} ({confidence:.2f})", font=font, fill="black")
     
-    output_path = os.path.join('./translated_images', os.path.basename(image_path))
+    # Save the annotated image
+    output_path = os.path.join('./analyzed_images', os.path.basename(image_path))
     image.save(output_path)
+    
+    if display:
+        # Display the image
+        plt.figure(figsize=(20, 10))
+        plt.subplot(1, 2, 1)
+        plt.imshow(np.array(image))
+        plt.title("Image with Bounding Boxes")
+        plt.axis("off")
+        
+        original_image = Image.open(image_path)
+        plt.subplot(1, 2, 2)
+        plt.imshow(np.array(original_image))
+        plt.title("Original Image")
+        plt.axis("off")
+        
+        plt.show()
 
-    # Return the annotated image
-    return image
-
-def display_image(image_path, annotated_image):
+def display_image(image_path, annotated_image_path):
     """
     Display the original image and the annotated image side by side.
     
@@ -174,8 +195,9 @@ def display_image(image_path, annotated_image):
     plt.figure(figsize=(20, 10))
     
     # Display the annotated image
+    annotated_image = Image.open(annotated_image_path)
     plt.subplot(1, 2, 1)
-    plt.imshow(annotated_image.convert('RGB'))
+    plt.imshow(annotated_image)
     plt.title("Annotated Image with Translated Text")
     plt.axis("off")
     
@@ -187,3 +209,15 @@ def display_image(image_path, annotated_image):
     plt.axis("off")
     
     plt.show()
+
+def retrieve_bounding_boxes_by_image_path(image_path):
+    image_name = os.path.basename(image_path).split(".")[0]
+    json_path = f"./bounding_boxes/{image_name}.json"
+    if os.path.exists(json_path):
+        bounding_boxes = load_bounding_boxes(json_path)
+        if os.path.exists(image_path):
+            return bounding_boxes
+        else:
+            print(f"Image file {image_path} does not exist.")
+    else:
+        print(f"Bounding box data {json_path} does not exist.")
