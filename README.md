@@ -76,6 +76,7 @@ microsoft_translation_public/
 ├── src/
 │   ├── config/
 │   │   ├── __init__.py
+│   │   ├── font_config.py
 │   │   ├── base.py
 │   │   ├── development.py
 │   │   └── production.py
