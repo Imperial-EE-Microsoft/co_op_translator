@@ -166,8 +166,13 @@ def translate_image(image_path, target_language):
 
     return output_path
 
-# High-level function to process an image given a list of image paths
 def process_image_paths(image_paths):
+    """
+    Process a list of image paths, extract bounding boxes, and plot them.
+
+    Args:
+        image_paths (list): List of paths to image files.
+    """
     output_dir = "./bounding_boxes"
     os.makedirs(output_dir, exist_ok=True)
 
@@ -178,3 +183,4 @@ def process_image_paths(image_paths):
             if line_bounding_boxes:
                 save_bounding_boxes(image_path, line_bounding_boxes)
                 plot_bounding_boxes(image_path, line_bounding_boxes, display=True)
+
