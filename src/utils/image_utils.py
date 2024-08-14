@@ -9,8 +9,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageStat
 import matplotlib.pyplot as plt
-
-FONT_PATH = "./NotoSans-Medium.ttf"
+from src.config.font_config import FontConfig
 
 def save_bounding_boxes(image_path, bounding_boxes):
     """
@@ -130,55 +129,6 @@ def create_filled_polygon_mask(bounding_box, image_size, fill_color):
     mask_draw.polygon(pts, fill=fill_color)
     return mask_image
 
-def plot_bounding_boxes(image_path, line_bounding_boxes, display=True):
-    """
-    Plot bounding boxes on the image.
-    
-    Args:
-        image_path (str): Path to the image file.
-        line_bounding_boxes (list): List of bounding boxes and text data.
-        display (bool): Whether to display the image.
-    """
-    os.makedirs('./analyzed_images', exist_ok=True)
-    
-    image = Image.open(image_path)
-    draw = ImageDraw.Draw(image)
-    
-    font_size = 20
-    font = ImageFont.truetype(FONT_PATH, font_size)
-    
-    for line_info in line_bounding_boxes:
-        bounding_box = line_info['bounding_box']
-        confidence = line_info['confidence']
-        pts = [(bounding_box[i], bounding_box[i+1]) for i in range(0, len(bounding_box), 2)]
-        
-        draw.line(pts + [pts[0]], fill="yellow", width=4)
-        x, y = bounding_box[0], bounding_box[1] - font_size
-        outline_range = 2
-        for dx in range(-outline_range, outline_range + 1):
-            for dy in range(-outline_range, outline_range + 1):
-                if dx != 0 or dy != 0:
-                    draw.text((x + dx, y + dy), f"{line_info['text']} ({confidence:.2f})", font=font, fill="white")
-        draw.text((x, y), f"{line_info['text']} ({confidence:.2f})", font=font, fill="black")
-    
-    output_path = os.path.join('./analyzed_images', os.path.basename(image_path))
-    image.save(output_path)
-    
-    if display:
-        plt.figure(figsize=(20, 10))
-        plt.subplot(1, 2, 1)
-        plt.imshow(np.array(image))
-        plt.title("Image with Bounding Boxes")
-        plt.axis("off")
-        
-        original_image = Image.open(image_path)
-        plt.subplot(1, 2, 2)
-        plt.imshow(np.array(original_image))
-        plt.title("Original Image")
-        plt.axis("off")
-        
-        plt.show()
-
 def plot_annotated_image(image_path, line_bounding_boxes, translated_text_list):
     """
     Plot annotated image with translated text.
@@ -193,7 +143,7 @@ def plot_annotated_image(image_path, line_bounding_boxes, translated_text_list):
     image = Image.open(image_path).convert('RGBA')
     
     font_size = 40
-    font = ImageFont.truetype(FONT_PATH, font_size)
+    font = ImageFont.truetype(FontConfig.NOTO_SANS_MEDIUM, font_size)
     
     for line_info, translated_text in zip(line_bounding_boxes, translated_text_list):
         bounding_box = line_info['bounding_box']
@@ -209,13 +159,27 @@ def plot_annotated_image(image_path, line_bounding_boxes, translated_text_list):
     
     output_path = os.path.join('./translated_images', os.path.basename(image_path))
     image.save(output_path)
+
+    # Return the annotated image
+    return image
+
+def display_image(image_path, annotated_image):
+    """
+    Display the original image and the annotated image side by side.
     
+    Args:
+        image_path (str): Path to the original image file.
+        annotated_image (PIL.Image.Image): The image annotated with translated text.
+    """
     plt.figure(figsize=(20, 10))
+    
+    # Display the annotated image
     plt.subplot(1, 2, 1)
-    plt.imshow(image.convert('RGB'))
+    plt.imshow(annotated_image.convert('RGB'))
     plt.title("Annotated Image with Translated Text")
     plt.axis("off")
     
+    # Display the original image
     original_image = Image.open(image_path)
     plt.subplot(1, 2, 2)
     plt.imshow(original_image)
