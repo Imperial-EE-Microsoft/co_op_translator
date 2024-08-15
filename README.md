@@ -59,6 +59,11 @@
     pytest tests/
     ```
 
+## Sample notebooks
+
+- [Getting Started with notebook: basic version](notebooks/notebook_for_microsoft_final.ipynb)
+- [Getting Started with notebook: module version](notebooks/notebook_for_module_project.ipynb)
+
 ## Project Structure
 
 ```text
