@@ -9,7 +9,7 @@ from azure.ai.vision.imageanalysis.models import VisualFeatures
 from azure.core.credentials import AzureKeyCredential
 from msrest.authentication import CognitiveServicesCredentials
 from src.text_translator.openai_translator import translate_text
-from src.config.base import Config
+from src.config.base_config import Config
 from src.config.font_config import FontConfig
 from src.utils.image_utils import (
     get_average_color,
@@ -30,7 +30,7 @@ def get_computervision_client():
     Returns:
         ComputerVisionClient: The initialized client.
     """
-    endpoint = Config.AZURE_VISION_ENDPOINT
+    endpoint = Config.AZURE_AI_SERVICE_ENDPOINT
     subscription_key = Config.AZURE_SUBSCRIPTION_KEY
     return ComputerVisionClient(endpoint, CognitiveServicesCredentials(subscription_key))
 
@@ -41,7 +41,7 @@ def get_image_analysis_client():
     Returns:
         ImageAnalysisClient: The initialized client.
     """
-    endpoint = Config.AZURE_VISION_ENDPOINT
+    endpoint = Config.AZURE_AI_SERVICE_ENDPOINT
     subscription_key = Config.AZURE_SUBSCRIPTION_KEY
     return ImageAnalysisClient(endpoint, AzureKeyCredential(subscription_key))
 
@@ -183,4 +183,3 @@ def process_image_paths(image_paths):
             if line_bounding_boxes:
                 save_bounding_boxes(image_path, line_bounding_boxes)
                 plot_bounding_boxes(image_path, line_bounding_boxes, display=True)
-
