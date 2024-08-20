@@ -1,5 +1,9 @@
 import os
-from src.image_translator import ImageTranslator
+from src.translators.image_translator import ImageTranslator
+from src.utils.image_utils import (
+    save_bounding_boxes,
+    plot_bounding_boxes,
+)
 
 class ImageAnalyzer:
     def __init__(self, output_dir="./bounding_boxes"):
@@ -25,5 +29,5 @@ class ImageAnalyzer:
                 print(f"Processing {image_path}")
                 line_bounding_boxes = self.image_translator.extract_line_bounding_boxes(image_path)
                 if line_bounding_boxes:
-                    self.save_bounding_boxes(image_path, line_bounding_boxes)
-                    self.plot_bounding_boxes(image_path, line_bounding_boxes, display=True)
+                    save_bounding_boxes(image_path, line_bounding_boxes)
+                    plot_bounding_boxes(image_path, line_bounding_boxes, display=True)

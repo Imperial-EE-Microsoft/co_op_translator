@@ -1,13 +1,15 @@
 import os
 import numpy as np
 from PIL import Image, ImageFont
+from pathlib import Path
 from src.config.font_config import FontConfig
 from src.utils.image_utils import (
     get_average_color,
     get_text_color,
     create_filled_polygon_mask,
     draw_text_on_image,
-    warp_image_to_bounding_box
+    warp_image_to_bounding_box,
+    get_image_mode
 )
 from azure.ai.vision.imageanalysis import ImageAnalysisClient
 from azure.ai.vision.imageanalysis.models import VisualFeatures
@@ -88,20 +90,16 @@ class ImageTranslator:
                                               If None, save in default location (./translated_images/).
 
         Returns:
-            PIL.Image.Image: The annotated image.
+            str: The path to the annotated image.
         """
-        # Load the image
-        image = Image.open(image_path).convert('RGBA')
+        # Load the image with the appropriate mode
+        mode = get_image_mode(image_path)
+        image = Image.open(image_path).convert(mode)
         
         font_size = 40
         font_path = self.font_config.get_font_path(target_language_code)
-        try:
-            font = ImageFont.truetype(font_path, font_size)
-            print("Font loaded successfully.")
-        except OSError as e:
-            print(f"Failed to load font. Error: {e}")
+        font = ImageFont.truetype(font_path, font_size)
 
-        
         # Annotate the image with translated text
         for line_info, translated_text in zip(line_bounding_boxes, translated_text_list):
             bounding_box = line_info['bounding_box']
@@ -113,8 +111,16 @@ class ImageTranslator:
             # Create a mask to fill the bounding box area with the background color
             mask_image = create_filled_polygon_mask(bounding_box, image.size, bg_color)
 
-            # Composite the mask onto the image to fill the bounding box
-            image = Image.alpha_composite(image, mask_image)
+            if mode == 'RGBA':
+                # Composite the mask onto the image to fill the bounding box (for PNG images)
+                image = Image.alpha_composite(image, mask_image)
+            else:
+                # Convert image to RGBA (if it's not already in RGBA mode)
+                image = image.convert('RGBA')
+                mask_image = mask_image.convert('RGBA')
+
+                # Use alpha_composite to overlay mask_image onto the original image
+                image = Image.alpha_composite(image, mask_image)
 
             # Draw the translated text onto a temporary image
             text_image = draw_text_on_image(translated_text, font, text_color)
@@ -125,19 +131,24 @@ class ImageTranslator:
 
             # Convert the warped text image back to PIL format and paste it onto the original image
             warped_text_image_pil = Image.fromarray(warped_text_image)
+
             image = Image.alpha_composite(image, warped_text_image_pil)
-        
+
         # Determine the output path based on the destination_path parameter
         if destination_path is None:
-            output_path = os.path.join(self.default_output_dir, os.path.basename(image_path))
+            output_path = os.path.join(self.default_output_dir, f"{Path(image_path).stem}.{target_language_code}{Path(image_path).suffix}")
         else:
             output_path = destination_path
-        
-        # Save the annotated image to the determined output path
-        image.save(output_path)
 
-        # Return the annotated image
-        return image
+        # Save the annotated image to the determined output path
+        if mode == 'RGBA':
+            image.save(output_path)
+        else:
+            image = image.convert("RGB")  # Ensure JPG compatibility
+            image.save(output_path, format="JPEG")
+
+        # Return the path to the annotated image
+        return output_path
 
     def translate_image(self, image_path, target_language_code, destination_path=None):
         """
@@ -150,7 +161,7 @@ class ImageTranslator:
                                             If None, save in default location (./translated_images/).
 
         Returns:
-            PIL.Image.Image: The annotated image, or the original image if no text is detected.
+            str: The path to the annotated image.
         """
         # Extract text and bounding boxes from the image
         line_bounding_boxes = self.extract_line_bounding_boxes(image_path)
@@ -158,7 +169,7 @@ class ImageTranslator:
         # Check if any text was recognized
         if not line_bounding_boxes:
             print("No text was recognized in the image.")
-            return Image.open(image_path)  # Return the original image if no text is found
+            return image_path  # Return the original image path if no text is found
         
         # Extract the text data from the bounding boxes
         text_data = [line['text'] for line in line_bounding_boxes]
@@ -169,11 +180,5 @@ class ImageTranslator:
         # Translate the text data into the target language
         translated_text_list = self.text_translator.translate_image_text(text_data, target_language_name)
         
-        # Determine the output path based on the destination_path parameter
-        if destination_path is None:
-            output_path = os.path.join(self.default_output_dir, os.path.basename(image_path))
-        else:
-            output_path = destination_path
-
         # Annotate the image with the translated text and save the result
-        return self.plot_annotated_image(image_path, line_bounding_boxes, translated_text_list, target_language_code, output_path)
+        return self.plot_annotated_image(image_path, line_bounding_boxes, translated_text_list, target_language_code, destination_path)
