@@ -20,10 +20,32 @@ class FontConfig:
             language_code (str): The language code.
 
         Returns:
-            str: The full path to the corresponding font file. If the font for the given language is not found,
-                 returns the default font path (NotoSans-Medium.ttf).
+            str: The full path to the corresponding font file.
+
+        Raises:
+            ValueError: If the language code or font is not found in the mappings.
         """
-        # Get the font name based on the language code. Use the default font if the language is not specified.
-        font_name = self.font_mappings.get(language_code, {}).get('font', 'NotoSans-Medium.ttf')
-        # Return the full path to the font file.
+        font_name = self.font_mappings.get(language_code, {}).get('font')
+        
+        if not font_name:
+            raise ValueError(f"Font for language code '{language_code}' is not supported or not found.")
+        
         return os.path.join(self.BASE_DIR, font_name)
+
+    def get_language_name(self, language_code):
+        """
+        Retrieve the language name for a given language code.
+
+        Args:
+            language_code (str): The language code.
+
+        Returns:
+            str: The name of the language corresponding to the language code.
+
+        Raises:
+            ValueError: If the language code is not found in the mappings.
+        """
+        if language_code not in self.font_mappings:
+            raise ValueError(f"Language code '{language_code}' is not supported.")
+        
+        return self.font_mappings.get(language_code, {}).get('name', language_code)

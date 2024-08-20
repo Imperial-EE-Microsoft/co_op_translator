@@ -1,0 +1,179 @@
+import os
+import numpy as np
+from PIL import Image, ImageFont
+from src.config.font_config import FontConfig
+from src.utils.image_utils import (
+    get_average_color,
+    get_text_color,
+    create_filled_polygon_mask,
+    draw_text_on_image,
+    warp_image_to_bounding_box
+)
+from azure.ai.vision.imageanalysis import ImageAnalysisClient
+from azure.ai.vision.imageanalysis.models import VisualFeatures
+from azure.core.credentials import AzureKeyCredential
+from src.config.base_config import Config
+from src.translators.text_translator import TextTranslator
+
+class ImageTranslator:
+    def __init__(self, default_output_dir='./translated_images'):
+        """
+        Initialize the ImageTranslator with a default output directory.
+
+        Args:
+            default_output_dir (str): The default directory where translated images will be saved.
+        """
+        self.text_translator = TextTranslator()
+        self.font_config = FontConfig()
+        self.default_output_dir = default_output_dir
+        os.makedirs(self.default_output_dir, exist_ok=True)
+
+    def get_image_analysis_client(self):
+        """
+        Initialize and return an Image Analysis Client.
+
+        Returns:
+            ImageAnalysisClient: The initialized client.
+        """
+        endpoint = Config.AZURE_AI_SERVICE_ENDPOINT
+        subscription_key = Config.AZURE_SUBSCRIPTION_KEY
+        return ImageAnalysisClient(endpoint, AzureKeyCredential(subscription_key))
+
+    def extract_line_bounding_boxes(self, image_path):
+        """
+        Extract line bounding boxes from an image using Azure Analysis Client.
+
+        Args:
+            image_path (str): Path to the image file.
+
+        Returns:
+            list: List of dictionaries containing text, bounding box coordinates, and confidence scores.
+
+        Raises:
+            Exception: If the OCR operation did not succeed.
+        """
+        image_analysis_client = self.get_image_analysis_client()
+        with open(image_path, "rb") as image_stream:
+            image_data = image_stream.read()
+            result = image_analysis_client.analyze(
+                image_data=image_data,
+                visual_features=[VisualFeatures.READ],
+            )
+
+        if result.read is not None:
+            line_bounding_boxes = []
+            for line in result.read.blocks[0].lines:
+                bounding_box = []
+                for point in line.bounding_polygon:
+                    bounding_box.append(point.x)
+                    bounding_box.append(point.y)
+                line_bounding_boxes.append({
+                    "text": line.text,
+                    "bounding_box": bounding_box,
+                    "confidence": line.words[0].confidence if line.words else None
+                })
+            return line_bounding_boxes
+        else:
+            raise Exception("No text was recognized in the image.")
+
+    def plot_annotated_image(self, image_path, line_bounding_boxes, translated_text_list, target_language_code, destination_path=None):
+        """
+        Plot annotated image with translated text.
+
+        Args:
+            image_path (str): Path to the image file.
+            line_bounding_boxes (list): List of bounding boxes and text data.
+            translated_text_list (list): List of translated texts.
+            destination_path (str, optional): The path to save the translated image. 
+                                              If None, save in default location (./translated_images/).
+
+        Returns:
+            PIL.Image.Image: The annotated image.
+        """
+        # Load the image
+        image = Image.open(image_path).convert('RGBA')
+        
+        font_size = 40
+        font_path = self.font_config.get_font_path(target_language_code)
+        try:
+            font = ImageFont.truetype(font_path, font_size)
+            print("Font loaded successfully.")
+        except OSError as e:
+            print(f"Failed to load font. Error: {e}")
+
+        
+        # Annotate the image with translated text
+        for line_info, translated_text in zip(line_bounding_boxes, translated_text_list):
+            bounding_box = line_info['bounding_box']
+
+            # Get the average color of the bounding box area
+            bg_color = get_average_color(image, bounding_box)
+            text_color = get_text_color(bg_color)
+
+            # Create a mask to fill the bounding box area with the background color
+            mask_image = create_filled_polygon_mask(bounding_box, image.size, bg_color)
+
+            # Composite the mask onto the image to fill the bounding box
+            image = Image.alpha_composite(image, mask_image)
+
+            # Draw the translated text onto a temporary image
+            text_image = draw_text_on_image(translated_text, font, text_color)
+
+            # Convert the text image to an array and warp it to fit the bounding box
+            text_image_array = np.array(text_image)
+            warped_text_image = warp_image_to_bounding_box(text_image_array, bounding_box, image.width, image.height)
+
+            # Convert the warped text image back to PIL format and paste it onto the original image
+            warped_text_image_pil = Image.fromarray(warped_text_image)
+            image = Image.alpha_composite(image, warped_text_image_pil)
+        
+        # Determine the output path based on the destination_path parameter
+        if destination_path is None:
+            output_path = os.path.join(self.default_output_dir, os.path.basename(image_path))
+        else:
+            output_path = destination_path
+        
+        # Save the annotated image to the determined output path
+        image.save(output_path)
+
+        # Return the annotated image
+        return image
+
+    def translate_image(self, image_path, target_language_code, destination_path=None):
+        """
+        Translate text in an image and return the image annotated with the translated text.
+
+        Args:
+            image_path (str): Path to the image file.
+            target_language_code (str): The language to translate the text into.
+            destination_path (str, optional): The path to save the translated image. 
+                                            If None, save in default location (./translated_images/).
+
+        Returns:
+            PIL.Image.Image: The annotated image, or the original image if no text is detected.
+        """
+        # Extract text and bounding boxes from the image
+        line_bounding_boxes = self.extract_line_bounding_boxes(image_path)
+
+        # Check if any text was recognized
+        if not line_bounding_boxes:
+            print("No text was recognized in the image.")
+            return Image.open(image_path)  # Return the original image if no text is found
+        
+        # Extract the text data from the bounding boxes
+        text_data = [line['text'] for line in line_bounding_boxes]
+
+        # Retrieve the name of the target language based on the language code
+        target_language_name = self.font_config.get_language_name(target_language_code)
+        
+        # Translate the text data into the target language
+        translated_text_list = self.text_translator.translate_image_text(text_data, target_language_name)
+        
+        # Determine the output path based on the destination_path parameter
+        if destination_path is None:
+            output_path = os.path.join(self.default_output_dir, os.path.basename(image_path))
+        else:
+            output_path = destination_path
+
+        # Annotate the image with the translated text and save the result
+        return self.plot_annotated_image(image_path, line_bounding_boxes, translated_text_list, target_language_code, output_path)
