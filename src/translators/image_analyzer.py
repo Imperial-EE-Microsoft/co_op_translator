@@ -30,4 +30,4 @@ class ImageAnalyzer:
                 line_bounding_boxes = self.image_translator.extract_line_bounding_boxes(image_path)
                 if line_bounding_boxes:
                     save_bounding_boxes(image_path, line_bounding_boxes)
-                    plot_bounding_boxes(image_path, line_bounding_boxes, display=True)
+                    plot_bounding_boxes(image_path, line_bounding_boxes,language_code="en", display=True)
