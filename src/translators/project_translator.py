@@ -1,8 +1,7 @@
-import hashlib
 from pathlib import Path
 
-from src.text_translator import TextTranslator
-from src.image_translator import ImageTranslator
+from src.translators import TextTranslator
+from src.translators import ImageTranslator
 
 class ProjectTranslator:
     def __init__(self, languages, root_dir='.'):
@@ -31,7 +30,7 @@ class ProjectTranslator:
         with open(translated_path, 'w', encoding='utf-8') as file:
             file.write(translated_content)
 
-    def translate_image(self, image_path, language, destination_path=None):
+    def translate_image(self, image_path, language):
         """
         Translate the text within an image to the target language and save it to the specified destination.
 
@@ -44,17 +43,13 @@ class ProjectTranslator:
         Returns:
             str: The path to the translated image.
         """
-        # Translate the image
-        translated_image_path = self.image_translator.translate_image(image_path, language)
-        
         # Determine the final destination path
-        if destination_path is None:
-            destination_path = self.image_dir / f"{image_path.stem}.{language}{image_path.suffix}"
+        destination_path = self.image_dir
+
+        # Translate the image
+        translated_image_path = self.image_translator.translate_image(image_path, language, destination_path)
         
-        # Save the translated image directly to the desired location
-        translated_image_path.rename(destination_path)
-        
-        return destination_path
+        return translated_image_path
 
     def process_all_markdown_files(self):
         for md_file in self.root_dir.glob('**/*.md'):
