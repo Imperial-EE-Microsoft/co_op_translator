@@ -131,7 +131,7 @@ def create_filled_polygon_mask(bounding_box, image_size, fill_color):
 
 # Function to Plot Bounding Boxes on Image. Set display=True to display the image in a notebook.
 # Saves images to ./analyzed_images
-def plot_bounding_boxes(image_path, line_bounding_boxes, display=True):
+def plot_bounding_boxes(image_path, line_bounding_boxes, language_code="en", display=True):
     # Create output directory if it doesn't exist
     os.makedirs('./analyzed_images', exist_ok=True)
     
@@ -139,8 +139,10 @@ def plot_bounding_boxes(image_path, line_bounding_boxes, display=True):
     draw = ImageDraw.Draw(image)
     
     font_size = 20
-
-    font = ImageFont.truetype(FontConfig.NOTO_SANS_MEDIUM, font_size)
+    # Load the font using FontConfig
+    font_config = FontConfig()
+    font_path = font_config.get_font_path(language_code)
+    font = ImageFont.truetype(font_path, font_size)
     
     for line_info in line_bounding_boxes:
         print(line_info)
@@ -221,3 +223,22 @@ def retrieve_bounding_boxes_by_image_path(image_path):
             print(f"Image file {image_path} does not exist.")
     else:
         print(f"Bounding box data {json_path} does not exist.")
+
+def get_image_mode(image_path):
+    """
+    Determine the appropriate image mode (RGBA or RGB) based on the file extension.
+
+    Args:
+        image_path (str or Path): The path to the image file.
+
+    Returns:
+        str: 'RGBA' for PNG files, 'RGB' for JPG/JPEG files.
+    """
+    extension = image_path.lower().split('.')[-1]
+    if extension in ['png']:
+        return 'RGBA'
+    elif extension in ['jpg', 'jpeg']:
+        return 'RGB'
+    else:
+        raise ValueError(f"Unsupported image format: {extension}")
+    
