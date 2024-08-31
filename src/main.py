@@ -10,6 +10,11 @@ def main(language_codes, root_dir):
     
     Example usage:
     translate_project --language-codes "es fr de"
+    translate_project --language-codes "all" --root-dir "./my_project"
+
+    Simplified version:
+    translate -l "es fr de"
+    translate -l "all" -r "./my_project"
     """
     # Initialize the ProjectTranslator
     translator = ProjectTranslator(language_codes, root_dir)
