@@ -9,8 +9,8 @@ def main(language_codes, root_dir):
     Translate all markdown and image files in the project based on the specified language codes.
     
     Example usage:
-    translate_project --language-codes "es fr de"
-    translate_project --language-codes "all" --root-dir "./my_project"
+    translate --language-codes "es fr de"
+    translate --language-codes "all" --root-dir "./my_project"
 
     Simplified version:
     translate -l "es fr de"
