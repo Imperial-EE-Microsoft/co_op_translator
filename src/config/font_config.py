@@ -49,3 +49,23 @@ class FontConfig:
             raise ValueError(f"Language code '{language_code}' is not supported.")
         
         return self.font_mappings.get(language_code, {}).get('name', language_code)
+
+    def get_rtl(self, language_code):
+        """
+        Check if the language is written from right to left (RTL).
+
+        Args:
+            language_code (str): The language code.
+
+        Returns:
+            bool: True if the language is RTL, False otherwise.
+
+        Raises:
+            ValueError: If the language code is not found in the mappings.
+        """
+        if language_code not in self.font_mappings:
+            raise ValueError(f"Language code '{language_code}' is not supported.")
+        
+        # Return RTL info if available, default to False
+        return self.font_mappings.get(language_code, {}).get('rtl', False)
+    

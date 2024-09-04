@@ -1,11 +1,10 @@
 import asyncio
 import logging
-import tempfile
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.prompt_template.prompt_template_config import PromptTemplateConfig
 from src.utils.markdown_utils import process_markdown, update_image_link, generate_prompt_template
-from src.config.base_config import Config 
+from src.config.base_config import Config
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -110,16 +109,3 @@ class MarkdownTranslator:
         )
 
         return await self.kernel.invoke(function)
-
-    def _is_rtl(self, language_code):
-        """
-        Determine if the target language is right-to-left.
-
-        Args:
-            language_code (str): The language code to check.
-
-        Returns:
-            bool: True if the language is RTL, False otherwise.
-        """
-        mappings = load_mappings(self.root_dir)
-        return mappings.get(language_code, {}).get('rtl', False)

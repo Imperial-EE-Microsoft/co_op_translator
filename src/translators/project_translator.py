@@ -3,12 +3,10 @@ from pathlib import Path
 import asyncio
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
-from semantic_kernel.prompt_template.prompt_template_config import PromptTemplateConfig
 from src.translators import text_translator, image_translator, markdown_translator
 from src.config.base_config import Config
 from src.config.constants import SUPPORTED_IMAGE_EXTENSIONS
-from src.utils.file_utils import read_input_file, handle_empty_document, write_output_file
-from src.utils.markdown_utils import load_mappings, generate_prompt_template
+from src.utils.file_utils import read_input_file, handle_empty_document
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -46,23 +44,12 @@ class ProjectTranslator:
             lang_dir = self.translations_dir / lang_code
             lang_dir.mkdir(parents=True, exist_ok=True)
 
-    def translate_image(self, image_path, language_code):
+    async def translate_image(self, image_path, language_code):
         try:
             translated_image_path = self.image_translator.translate_image(image_path, language_code, self.image_dir)
             logger.info(f"Translated image {image_path} to {language_code} and saved to {translated_image_path}")
         except Exception as e:
             logger.error(f"Failed to translate image {image_path}: {e}")
-
-    def process_all_image_files(self):
-        for image_file in self.root_dir.glob('**/*'):
-            if image_file.suffix.lower() in SUPPORTED_IMAGE_EXTENSIONS:
-                for language_code in self.language_codes:
-                    self.translate_image(image_file, language_code)
-
-    def translate_project(self):
-        self.create_translation_directories()
-        asyncio.run(self.process_all_markdown_files())
-        self.process_all_image_files()
 
     async def translate_markdown(self, file_path, language_code):
         """
@@ -101,3 +88,27 @@ class ProjectTranslator:
             for language_code in self.language_codes:
                 tasks.append(self.translate_markdown(md_file_path, language_code))
         await asyncio.gather(*tasks)
+
+    async def process_all_image_files(self):
+        tasks = []
+        for image_file in self.root_dir.glob('**/*'):
+            if image_file.suffix.lower() in SUPPORTED_IMAGE_EXTENSIONS:
+                for language_code in self.language_codes:
+                    tasks.append(self.translate_image(image_file, language_code))
+        await asyncio.gather(*tasks)
+
+    async def translate_project_async(self):
+        """
+        Translate the project by processing both markdown and image files asynchronously.
+        """
+        self.create_translation_directories()
+        await asyncio.gather(
+            self.process_all_markdown_files(),
+            self.process_all_image_files()
+        )
+
+    def translate_project(self):
+        """
+        Public method to start the project translation.
+        """
+        asyncio.run(self.translate_project_async())
