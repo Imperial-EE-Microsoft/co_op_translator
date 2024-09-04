@@ -2,7 +2,7 @@
 This module contains utility functions for handling file operations.
 Functions include reading from files, writing to files, and handling empty document scenarios.
 """
-
+import hashlib
 from pathlib import Path
 import shutil
 
@@ -41,3 +41,41 @@ def write_output_file(output_file: Path, results: list) -> None:
         for result in results:
             text_file.write(result)
             text_file.write("\n")
+
+def get_unique_id(file_path: str) -> str:
+    """
+    Generate a unique identifier for a file path.
+
+    Args:
+        file_path (str): The file path to hash.
+
+    Returns:
+        str: The unique identifier.
+    """
+    file_path_bytes = file_path.encode('utf-8')
+    hash_object = hashlib.sha256()
+    hash_object.update(file_path_bytes)
+    return hash_object.hexdigest()
+
+def generate_translated_filename(original_filepath: str, language_code: str) -> str:
+    """
+    Generate a filename for a translated file, including a unique hash and language code.
+
+    Args:
+        original_filepath (str): The original file path.
+        language_code (str): The language code for the translation (e.g., 'en', 'fr').
+
+    Returns:
+        str: The translated file's new filename.
+    """
+    # Extract original file components
+    original_filename = Path(original_filepath).stem  # Get filename without extension
+    file_ext = Path(original_filepath).suffix  # Get file extension
+    
+    # Generate unique hash based on the original file path
+    unique_hash = get_unique_id(str(original_filepath))
+
+    # Generate the new filename with the unique hash and language code
+    new_filename = f"{original_filename}.{unique_hash}.{language_code}{file_ext}"
+
+    return new_filename

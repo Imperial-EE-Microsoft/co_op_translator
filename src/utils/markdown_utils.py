@@ -5,30 +5,16 @@ and processing specific Markdown structures such as comments and URLs.
 """
 
 import re
-import yaml
-from pathlib import Path
 import tiktoken
 from pathlib import Path
-import hashlib
 from urllib.parse import urlparse
 import logging
+from src.utils.file_utils import get_unique_id
+from src.config.constants import SUPPORTED_IMAGE_EXTENSIONS
+from src.utils.file_utils import generate_translated_filename
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
-def load_mappings(root_dir: Path) -> dict:
-    """
-    Load language mappings from a YAML file.
-
-    Args:
-        root_dir (Path): The root directory containing the YAML file.
-
-    Returns:
-        dict: A dictionary of language mappings.
-    """
-    repo_root = root_dir.parent.parent
-    with open(repo_root / "font_language_mappings.yml", "r", encoding='utf-8') as file:
-        return yaml.safe_load(file)
 
 def generate_prompt_template(output_lang: str, document_chunk: str, is_rtl: bool) -> str:
     """
@@ -42,8 +28,10 @@ def generate_prompt_template(output_lang: str, document_chunk: str, is_rtl: bool
     Returns:
         str: The generated translation prompt.
     """
+    # Check if there is only one line in the document
     if len(document_chunk.split("\n")) == 1:
-        prompt = f"Translate the following text to {output_lang}. NEVER ADD ANY EXTRA CONTENT OUTSIDE THE TRANSLATION. TRANSLATE ONLY WHAT IS GIVEN TO YOU."
+        # Generate prompt for single line translation
+        prompt = f"Translate the following text to {output_lang}. NEVER ADD ANY EXTRA CONTENT OUTSIDE THE TRANSLATION. TRANSLATE ONLY WHAT IS GIVEN TO YOU.. MAINTAIN MARKDOWN FORMAT\n\n{document_chunk}"
     else:
         prompt = f"""
         Translate the following markdown file to {output_lang}.
@@ -57,7 +45,9 @@ def generate_prompt_template(output_lang: str, document_chunk: str, is_rtl: bool
     else:
         prompt += "Please write the output from left to right.\n"
 
+    # Append the actual document chunk to be translated
     prompt += "\n" + document_chunk
+
     return prompt
 
 def get_tokenizer(encoding_name: str):
@@ -162,44 +152,29 @@ def update_image_link(md_file_path: Path, markdown_string: str, language_code: s
     Returns:
         str: The updated markdown content with new image links.
     """
-    pattern = r'!\[(.*?)\]\((.*?)\)'
+    logger.info("UPDATING IMAGE LINKS")
+    pattern = r'!\[(.*?)\]\((.*?)\)' # Capture both alt text and link
     matches = re.findall(pattern, markdown_string)
 
     for alt_text, link in matches:
         parsed_url = urlparse(link)
         if parsed_url.scheme in ('http', 'https'):
-            continue
+            continue # Skip web URLs
 
-        path = parsed_url.path
-        original_filename, file_ext = os.path.splitext(Path(path).name)
+        path = Path(parsed_url.path)  # Convert to Path object
+        file_ext = path.suffix  # Get the file extension
 
-        if file_ext.lower() in settings.SUPPORTED_IMAGE_EXTENSIONS:
+        if file_ext.lower() in SUPPORTED_IMAGE_EXTENSIONS:
             if md_file_path.startswith(str(docs_dir)):
                 rel_levels = md_file_path.relative_to(docs_dir).parts
                 translated_folder = ('../' * len(rel_levels)) + 'translated_images'
-            else:
+            else: # is a readme image
                 translated_folder = "./translated_images"
 
             actual_image_path = md_file_path.parent / link
-            hash = get_unique_id(str(actual_image_path))
-            new_filename = f"{original_filename}.{hash}.{language_code}{file_ext}"
+            new_filename = generate_translated_filename(str(actual_image_path), language_code)
             updated_link = f"{translated_folder}/{new_filename}"
 
             markdown_string = markdown_string.replace(link, updated_link)
 
     return markdown_string
-
-def get_unique_id(file_path: str) -> str:
-    """
-    Generate a unique identifier for a file path.
-
-    Args:
-        file_path (str): The file path to hash.
-
-    Returns:
-        str: The unique identifier.
-    """
-    file_path_bytes = file_path.encode('utf-8')
-    hash_object = hashlib.sha256()
-    hash_object.update(file_path_bytes)
-    return hash_object.hexdigest()

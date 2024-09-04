@@ -5,6 +5,7 @@ from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.prompt_template.prompt_template_config import PromptTemplateConfig
 from src.utils.markdown_utils import process_markdown, update_image_link, generate_prompt_template
 from src.config.base_config import Config
+from src.config.font_config import FontConfig
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -52,14 +53,21 @@ class MarkdownTranslator:
         Returns:
             str: The translated content with updated image links.
         """
+        # Process the markdown document into chunks
         document_chunks = process_markdown(document)
-        prompts = [generate_prompt_template(language_code, chunk, self._is_rtl(language_code)) for chunk in document_chunks]
+        prompts = [generate_prompt_template(language_code, chunk, FontConfig.is_rtl(language_code)) for chunk in document_chunks]
 
+        # Translate each chunk asynchronously
         results = await self._run_prompts(prompts)
         translated_content = "\n".join(results)
 
         docs_dir = self.root_dir / 'docs'
+        # Update image links in the translated content
         updated_content = update_image_link(md_file_path, translated_content, language_code, docs_dir)
+
+        # Generate and append the translated disclaimer
+        disclaimer = await self.generate_disclaimer(language_code)
+        updated_content += "\n\n" + disclaimer  # Append disclaimer to the translated content
 
         return updated_content
 
@@ -109,3 +117,25 @@ class MarkdownTranslator:
         )
 
         return await self.kernel.invoke(function)
+
+    async def generate_disclaimer(self, output_lang: str) -> str:
+        """
+        Generate a disclaimer translation prompt for the specified language.
+
+        Args:
+            output_lang (str): The target language for the disclaimer.
+
+        Returns:
+            str: The translated disclaimer text.
+        """
+
+        # Generate the disclaimer prompt
+        disclaimer_prompt = f""" Translate the following text to {output_lang}.
+
+        Disclaimer: The translation was translated from its original by an AI model and may not be perfect. 
+        Please review the output and make any necessary corrections."""
+        
+        # Run the disclaimer prompt through the translation system
+        disclaimer = await self._run_prompt(disclaimer_prompt, 'disclaimer prompt', 1)
+        
+        return disclaimer

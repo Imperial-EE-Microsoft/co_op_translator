@@ -2,8 +2,7 @@
 This module contains utility functions for handling images.
 Functions include saving and loading bounding boxes, drawing text on images, and plotting images with bounding boxes.
 """
-import hashlib
-from pathlib import Path
+
 import os
 import json
 import cv2
@@ -242,18 +241,3 @@ def get_image_mode(image_path):
         return 'RGB'
     else:
         raise ValueError(f"Unsupported image format: {extension}")
-
-def generate_image_hash(file_path: Path) -> str:
-    """
-    Generate a unique SHA-256 hash for a given file path.
-
-    Args:
-        file_path (Path): The path of the file to hash.
-
-    Returns:
-        str: The SHA-256 hash of the file path.
-    """
-    file_path_bytes = str(file_path).encode('utf-8')
-    hash_object = hashlib.sha256()
-    hash_object.update(file_path_bytes)
-    return hash_object.hexdigest()

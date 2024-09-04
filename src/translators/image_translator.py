@@ -16,6 +16,7 @@ from azure.ai.vision.imageanalysis.models import VisualFeatures
 from azure.core.credentials import AzureKeyCredential
 from src.config.base_config import Config
 from src.translators.text_translator import TextTranslator
+from src.utils.file_utils import generate_translated_filename
 
 class ImageTranslator:
     def __init__(self, default_output_dir='./translated_images'):
@@ -87,7 +88,7 @@ class ImageTranslator:
             line_bounding_boxes (list): List of bounding boxes and text data.
             translated_text_list (list): List of translated texts.
             destination_path (str, optional): The path to save the translated image. 
-                                              If None, save in default location (./translated_images/).
+                                            If None, save in default location (./translated_images/).
 
         Returns:
             str: The path to the annotated image.
@@ -131,14 +132,16 @@ class ImageTranslator:
 
             # Convert the warped text image back to PIL format and paste it onto the original image
             warped_text_image_pil = Image.fromarray(warped_text_image)
-
             image = Image.alpha_composite(image, warped_text_image_pil)
 
-        # Determine the output path based on the destination_path parameter
+        # Generate the new filename based on the original file name, hash, and language code
+        new_filename = generate_translated_filename(image_path, target_language_code)
+
+        # Determine the output path using pathlib
         if destination_path is None:
-            output_path = os.path.join(self.default_output_dir, f"{Path(image_path).stem}.{target_language_code}{Path(image_path).suffix}")
+            output_path = Path(self.default_output_dir) / new_filename
         else:
-            output_path = destination_path
+            output_path = Path(destination_path) / new_filename
 
         # Save the annotated image to the determined output path
         if mode == 'RGBA':
@@ -148,7 +151,7 @@ class ImageTranslator:
             image.save(output_path, format="JPEG")
 
         # Return the path to the annotated image
-        return output_path
+        return str(output_path)
 
     def translate_image(self, image_path, target_language_code, destination_path=None):
         """

@@ -50,7 +50,7 @@ class FontConfig:
         
         return self.font_mappings.get(language_code, {}).get('name', language_code)
 
-    def get_rtl(self, language_code):
+    def is_rtl(self, language_code):
         """
         Check if the language is written from right to left (RTL).
 
