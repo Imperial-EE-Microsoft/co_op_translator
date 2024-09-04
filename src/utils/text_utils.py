@@ -1,7 +1,6 @@
 """
 This module contains utility functions for handling text and generating prompts.
-Functions include generating translation prompts, processing responses from OpenAI, 
-and updating image links in Markdown content.
+Functions include generating translation prompts, processing responses from OpenAI.
 """
 
 import re
