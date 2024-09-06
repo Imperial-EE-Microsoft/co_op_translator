@@ -2,6 +2,7 @@
 This module contains utility functions for handling file operations.
 Functions include reading from files, writing to files, and handling empty document scenarios.
 """
+
 import hashlib
 from pathlib import Path
 import shutil
@@ -60,6 +61,10 @@ def get_unique_id(file_path: str) -> str:
 def generate_translated_filename(original_filepath: str, language_code: str) -> str:
     """
     Generate a filename for a translated file, including a unique hash and language code.
+
+    Note:
+    If the file path and the file name are identical, the same hash will be generated.
+    This is because the hash is based on the entire file path.
 
     Args:
         original_filepath (str): The original file path.

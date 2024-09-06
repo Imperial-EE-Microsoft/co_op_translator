@@ -9,7 +9,6 @@ import tiktoken
 from pathlib import Path
 from urllib.parse import urlparse
 import logging
-from src.utils.file_utils import get_unique_id
 from src.config.constants import SUPPORTED_IMAGE_EXTENSIONS
 from src.utils.file_utils import generate_translated_filename
 
@@ -137,15 +136,23 @@ def process_markdown(content: str, max_tokens=4096, encoding='o200k_base') -> li
         list: A list of processed markdown chunks.
     """
     tokenizer = get_tokenizer(encoding)
-    return split_markdown_content(content, max_tokens, tokenizer)
+    chunks = split_markdown_content(content, max_tokens, tokenizer)
 
-def update_image_link(md_file_path: Path, markdown_string: str, language_code: str, docs_dir: Path) -> str:
+    for i, chunk in enumerate(chunks):
+        chunk_tokens = count_tokens(chunk, tokenizer)
+        print(f"Chunk {i+1}: Length = {chunk_tokens} tokens")
+        if chunk_tokens == max_tokens:
+            print("Warning: This chunk has reached the maximum token limit.")
+
+    return chunks
+
+def update_image_link(md_file_path: Path, markdown_content: str, language_code: str, docs_dir: Path) -> str:
     """
     Update image links in the markdown content to reflect the translated images.
 
     Args:
         md_file_path (Path): The path to the markdown file.
-        markdown_string (str): The markdown content as a string.
+        markdown_content (str): The markdown content as a string.
         language_code (str): The language code for the translation.
         docs_dir (Path): The directory where the documentation is stored.
 
@@ -154,7 +161,7 @@ def update_image_link(md_file_path: Path, markdown_string: str, language_code: s
     """
     logger.info("UPDATING IMAGE LINKS")
     pattern = r'!\[(.*?)\]\((.*?)\)' # Capture both alt text and link
-    matches = re.findall(pattern, markdown_string)
+    matches = re.findall(pattern, markdown_content)
 
     for alt_text, link in matches:
         parsed_url = urlparse(link)
@@ -175,6 +182,6 @@ def update_image_link(md_file_path: Path, markdown_string: str, language_code: s
             new_filename = generate_translated_filename(str(actual_image_path), language_code)
             updated_link = f"{translated_folder}/{new_filename}"
 
-            markdown_string = markdown_string.replace(link, updated_link)
+            markdown_content = markdown_content.replace(link, updated_link)
 
-    return markdown_string
+    return markdown_content
