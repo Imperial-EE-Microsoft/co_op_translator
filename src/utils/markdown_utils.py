@@ -3,14 +3,14 @@ This module contains utility functions for handling Markdown content.
 Functions include loading language mappings, generating translation prompts,
 and processing specific Markdown structures such as comments and URLs.
 """
-
+import os
 import re
 import tiktoken
 from pathlib import Path
 from urllib.parse import urlparse
 import logging
 from src.config.constants import SUPPORTED_IMAGE_EXTENSIONS
-from src.utils.file_utils import generate_translated_filename, get_file_extension
+from src.utils.file_utils import generate_translated_filename, get_file_extension, get_unique_id, get_translation_destination
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -147,55 +147,47 @@ def process_markdown(content: str, max_tokens=4096, encoding='o200k_base') -> li
 
     return chunks
 
-def update_image_link(md_file_path: Path, markdown_content: str, language_code: str, docs_dir: Path) -> str:
-    """
-    Update image links in the markdown content to reflect the translated images.
-
-    Args:
-        md_file_path (Path): The path to the markdown file.
-        markdown_content (str): The markdown content as a string.
-        language_code (str): The language code for the translation.
-        docs_dir (Path): The directory where the documentation is stored.
-
-    Returns:
-        str: The updated markdown content with new image links.
-    """
+def update_image_link(md_file_path: Path, markdown_string: str, language_code: str, root_dir: Path) -> str:
     logger.info("UPDATING IMAGE LINKS")
     pattern = r'!\[(.*?)\]\((.*?)\)'  # Capture both alt text and link
-    matches = re.findall(pattern, markdown_content)
+    matches = re.findall(pattern, markdown_string)
+
+    translations_dir = root_dir / 'translations'
+    translated_images_dir = root_dir / 'translated_images'
 
     for alt_text, link in matches:
-        try:
-            parsed_url = urlparse(link)
-            if parsed_url.scheme in ('http', 'https'):
-                continue  # Skip web URLs
+        parsed_url = urlparse(link)
+        if parsed_url.scheme in ('http', 'https'):
+            logger.info(f"Skipped {link} as it is a URL")
+            continue  # Skip web URLs
 
-            path = Path(parsed_url.path)  # Convert to Path object
-            file_ext = get_file_extension(path)  # Get the file extension
+        # Extract the path without query parameters
+        path = parsed_url.path
+        original_filename, file_ext = os.path.splitext(os.path.basename(path))
 
-            if file_ext.lower() in SUPPORTED_IMAGE_EXTENSIONS:
-                # Check if the image file exists
-                actual_image_path = md_file_path.parent / link
-                if not actual_image_path.exists():
-                    logger.warning(f"Image file not found: {actual_image_path}, updating link format only.")
-                    continue  # Skip link modification if image does not exist
+        logger.info(f"link: {link}, original_filename: {original_filename}, file_ext: {file_ext}")
 
-                # Check if the file is part of the docs directory
-                if docs_dir in md_file_path.parents:
-                    rel_levels = len(md_file_path.relative_to(docs_dir).parts)
-                    translated_folder = ('../' * rel_levels) + 'translated_images'
-                else:  # It is a readme image
-                    translated_folder = "./translated_images"
+        if file_ext.lower() in SUPPORTED_IMAGE_EXTENSIONS:
+            logger.info("This is an image")
 
-                # Generate the new filename
-                new_filename = generate_translated_filename(str(actual_image_path), language_code)
-                updated_link = f"{translated_folder}/{new_filename}"
+            # Determine the translated markdown file's path and translated image path
+            translated_md_dir = translations_dir / language_code / md_file_path.relative_to(root_dir).parent
 
-                # Update the markdown content with the new link
-                markdown_content = markdown_content.replace(link, updated_link)
+            # Calculate the relative path between translated markdown file and translated image
+            rel_path = '../' + os.path.relpath(translated_images_dir, translated_md_dir)
 
-        except Exception as e:
-            logger.error(f"Failed to update image link for {link}: {e}")
-            # Log the error but continue processing the other links
+            # Construct the new image path
+            hash = get_unique_id(str(md_file_path))
+            new_filename = f"{original_filename}.{hash}.{language_code}{file_ext}"
+            updated_link = os.path.join(rel_path, new_filename).replace(os.path.sep, '/')
 
-    return markdown_content
+            # Replace the image link in the markdown
+            old_image_markup = f'![{alt_text}]({link})'
+            new_image_markup = f'![{alt_text}]({updated_link})'
+            markdown_string = markdown_string.replace(old_image_markup, new_image_markup)
+
+            logger.info(f"Updated markdown_string: {markdown_string}")
+        else:
+            logger.info(f"File {link} is not an image. Skipping...")
+
+    return markdown_string

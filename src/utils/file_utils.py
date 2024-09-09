@@ -142,3 +142,22 @@ def filter_files(directory: str | Path) -> list:
     """
     directory = Path(directory)
     return [file for file in directory.glob('**/*') if file.is_file()]
+
+def get_translation_destination(file_path: Path, root_dir: Path, folder_type: str) -> Path:
+    """
+    Get the destination path for translated files or images based on the folder structure.
+
+    Args:
+        file_path (Path): The original file path.
+        root_dir (Path): The root directory of the project.
+        folder_type (str): The folder type ('translated_images' or 'translations').
+
+    Returns:
+        Path: The destination path for the translated file or image.
+    """
+    if 'src' in file_path.parts:
+        return root_dir / 'src' / folder_type
+    elif 'docs' in file_path.parts:
+        return root_dir / 'docs' / folder_type
+    else:
+        return root_dir / folder_type

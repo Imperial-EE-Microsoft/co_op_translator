@@ -166,6 +166,9 @@ class ImageTranslator:
         Returns:
             str: The path to the annotated image.
         """
+
+        image_path = Path(image_path)
+
         # Extract text and bounding boxes from the image
         line_bounding_boxes = self.extract_line_bounding_boxes(image_path)
 

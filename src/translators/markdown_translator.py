@@ -58,6 +58,7 @@ class MarkdownTranslator:
         """
 
         md_file_path = Path(md_file_path)
+        
         # Process the markdown document into chunks
         document_chunks = process_markdown(document)
         prompts = [generate_prompt_template(language_code, chunk, self.font_config.is_rtl(language_code)) for chunk in document_chunks]
@@ -66,7 +67,14 @@ class MarkdownTranslator:
         results = await self._run_prompts(prompts)
         translated_content = "\n".join(results)
 
-        docs_dir = self.root_dir / 'docs'
+        # Set the base directory for image link updating based on the file path
+        if 'src' in md_file_path.parts:
+            docs_dir = self.root_dir / 'src'  # Base directory for src files
+        elif 'docs' in md_file_path.parts:
+            docs_dir = self.root_dir / 'docs'  # Base directory for docs files
+        else:
+            docs_dir = self.root_dir  # Base directory for other files
+
         # Update image links in the translated content
         updated_content = update_image_link(md_file_path, translated_content, language_code, docs_dir)
 
