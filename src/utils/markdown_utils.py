@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 import logging
 from src.config.constants import SUPPORTED_IMAGE_EXTENSIONS
-from src.utils.file_utils import generate_translated_filename
+from src.utils.file_utils import generate_translated_filename, get_file_extension
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -27,6 +27,7 @@ def generate_prompt_template(output_lang: str, document_chunk: str, is_rtl: bool
     Returns:
         str: The generated translation prompt.
     """
+
     # Check if there is only one line in the document
     if len(document_chunk.split("\n")) == 1:
         # Generate prompt for single line translation
@@ -160,28 +161,41 @@ def update_image_link(md_file_path: Path, markdown_content: str, language_code: 
         str: The updated markdown content with new image links.
     """
     logger.info("UPDATING IMAGE LINKS")
-    pattern = r'!\[(.*?)\]\((.*?)\)' # Capture both alt text and link
+    pattern = r'!\[(.*?)\]\((.*?)\)'  # Capture both alt text and link
     matches = re.findall(pattern, markdown_content)
 
     for alt_text, link in matches:
-        parsed_url = urlparse(link)
-        if parsed_url.scheme in ('http', 'https'):
-            continue # Skip web URLs
+        try:
+            parsed_url = urlparse(link)
+            if parsed_url.scheme in ('http', 'https'):
+                continue  # Skip web URLs
 
-        path = Path(parsed_url.path)  # Convert to Path object
-        file_ext = path.suffix  # Get the file extension
+            path = Path(parsed_url.path)  # Convert to Path object
+            file_ext = get_file_extension(path)  # Get the file extension
 
-        if file_ext.lower() in SUPPORTED_IMAGE_EXTENSIONS:
-            if md_file_path.startswith(str(docs_dir)):
-                rel_levels = md_file_path.relative_to(docs_dir).parts
-                translated_folder = ('../' * len(rel_levels)) + 'translated_images'
-            else: # is a readme image
-                translated_folder = "./translated_images"
+            if file_ext.lower() in SUPPORTED_IMAGE_EXTENSIONS:
+                # Check if the image file exists
+                actual_image_path = md_file_path.parent / link
+                if not actual_image_path.exists():
+                    logger.warning(f"Image file not found: {actual_image_path}, updating link format only.")
+                    continue  # Skip link modification if image does not exist
 
-            actual_image_path = md_file_path.parent / link
-            new_filename = generate_translated_filename(str(actual_image_path), language_code)
-            updated_link = f"{translated_folder}/{new_filename}"
+                # Check if the file is part of the docs directory
+                if docs_dir in md_file_path.parents:
+                    rel_levels = len(md_file_path.relative_to(docs_dir).parts)
+                    translated_folder = ('../' * rel_levels) + 'translated_images'
+                else:  # It is a readme image
+                    translated_folder = "./translated_images"
 
-            markdown_content = markdown_content.replace(link, updated_link)
+                # Generate the new filename
+                new_filename = generate_translated_filename(str(actual_image_path), language_code)
+                updated_link = f"{translated_folder}/{new_filename}"
+
+                # Update the markdown content with the new link
+                markdown_content = markdown_content.replace(link, updated_link)
+
+        except Exception as e:
+            logger.error(f"Failed to update image link for {link}: {e}")
+            # Log the error but continue processing the other links
 
     return markdown_content
