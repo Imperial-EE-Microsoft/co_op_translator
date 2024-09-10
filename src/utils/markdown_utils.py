@@ -175,7 +175,7 @@ def update_image_link(md_file_path: Path, markdown_string: str, language_code: s
             translated_md_dir = translations_dir / language_code / md_file_path.relative_to(root_dir).parent
 
             # Calculate the relative path between translated markdown file and translated image
-            rel_path = '../' + os.path.relpath(translated_images_dir, translated_md_dir)
+            rel_path = os.path.relpath(translated_images_dir, translated_md_dir)
 
             # Construct the new image path
             new_filename = generate_translated_filename(actual_image_path, language_code, root_dir)
