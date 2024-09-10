@@ -1,4 +1,5 @@
 import logging
+import shutil
 from pathlib import Path
 import asyncio
 from semantic_kernel import Kernel
@@ -6,7 +7,7 @@ from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from src.translators import text_translator, image_translator, markdown_translator
 from src.config.base_config import Config
 from src.config.constants import SUPPORTED_IMAGE_EXTENSIONS
-from src.utils.file_utils import read_input_file, handle_empty_document, get_filename_and_extension, filter_files
+from src.utils.file_utils import read_input_file, handle_empty_document, get_filename_and_extension, filter_files, reset_translation_directories
 
 logger = logging.getLogger(__name__)
 
@@ -34,14 +35,6 @@ class ProjectTranslator:
             )
         )
         return kernel
-
-    def create_translation_directories(self):
-        """
-        Create necessary directories for storing translated files.
-        """
-        for lang_code in self.language_codes:
-            lang_dir = self.translations_dir / lang_code
-            lang_dir.mkdir(parents=True, exist_ok=True)
 
     async def translate_image(self, image_path, language_code):
         image_path = Path(image_path)
@@ -102,7 +95,14 @@ class ProjectTranslator:
         """
         Translate the project by processing both markdown and image files asynchronously.
         """
-        self.create_translation_directories()
+
+        logger.info("Resetting translation directories...")
+        
+        # Step 1: Reset translation directories (remove old, create new)
+        reset_translation_directories(self.translations_dir, self.image_dir, self.language_codes)
+
+        # Step 2: Process markdown and image files
+        logger.info("Starting translation tasks...")
         await asyncio.gather(
             self.process_all_markdown_files(),
             self.process_all_image_files()
