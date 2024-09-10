@@ -6,6 +6,11 @@ Functions include reading from files, writing to files, and handling empty docum
 import hashlib
 from pathlib import Path
 import shutil
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 def read_input_file(input_file: str | Path) -> str:
     """
@@ -47,23 +52,62 @@ def write_output_file(output_file: str | Path, results: list) -> None:
             text_file.write(result)
             text_file.write("\n")
 
-def get_unique_id(file_path: str | Path) -> str:
+def get_actual_image_path(image_relative_path: str | Path, markdown_file_path: str | Path) -> Path:
     """
-    Generate a unique identifier (hash) for the given file path.
+    Given an image's relative path from the markdown file, return the actual file path
+    by resolving the relative path against the markdown file's location.
+
+    Args:
+        image_relative_path (str | Path): The relative path of the image as found in the markdown file.
+        markdown_file_path (str | Path): The path to the markdown file.
+
+    Returns:
+        Path: The resolved absolute path to the image file.
+    """
+    image_relative_path = Path(image_relative_path)
+    markdown_file_path = Path(markdown_file_path).resolve()
+
+    # Resolve the actual image path based on the markdown file's parent directory
+    actual_image_path = (markdown_file_path.parent / image_relative_path).resolve()
+
+    return actual_image_path
+
+def get_unique_id(file_path: str | Path, root_dir: Path) -> str:
+    """
+    Generate a unique identifier (hash) for the given file path, relative to the root directory.
 
     Args:
         file_path (str | Path): The file path or string data to hash.
+        root_dir (Path): The root directory to which the path should be made relative.
 
     Returns:
         str: A SHA-256 hash of the file path or string.
     """
-    file_path = str(file_path)  # Ensure it's a string for encoding
-    file_path_bytes = file_path.encode('utf-8')
+    # Ensure file_path and root_dir are strings
+    file_path = Path(file_path).resolve()
+
+    # Normalize the path to remove redundant separators and up-level references
+    normalized_path = os.path.normpath(file_path)
+
+    # Convert backslashes to forward slashes for consistency
+    normalized_path = normalized_path.replace('\\', '/')
+
+    # Log the normalized path for debugging
+    logger.info(f"Normalized file path for hashing: {normalized_path}")
+
+    # Convert the normalized path to bytes and hash it
+    file_path_bytes = normalized_path.encode('utf-8')
     hash_object = hashlib.sha256()
     hash_object.update(file_path_bytes)
-    return hash_object.hexdigest()
+    
+    # Generate the hexadecimal digest
+    unique_identifier = hash_object.hexdigest()
+    
+    logger.info(f"HASH in GET UNIQUE ID for: {normalized_path} HASH={unique_identifier}")
+    
+    return unique_identifier
 
-def generate_translated_filename(original_filepath: str | Path, language_code: str) -> str:
+def generate_translated_filename(original_filepath: str | Path, language_code: str, root_dir: Path) -> str:
     """
     Generate a filename for a translated file, including a unique hash and language code.
 
@@ -78,57 +122,38 @@ def generate_translated_filename(original_filepath: str | Path, language_code: s
     Returns:
         str: The translated file's new filename.
     """
+
+    original_filepath = Path(original_filepath)
+
     # Extract original file components
-    original_filename = get_filename_without_extension(original_filepath)  # Get filename without extension
-    file_ext = get_file_extension(original_filepath)  # Get file extension
-    
-    # Generate unique hash based on the original file path
-    unique_hash = get_unique_id(str(original_filepath))
+    original_filename, file_ext = get_filename_and_extension(original_filepath)
+
+    # Extract filename and extension
+    unique_hash = get_unique_id(str(original_filepath), root_dir)
 
     # Generate the new filename with the unique hash and language code
     new_filename = f"{original_filename}.{unique_hash}.{language_code}{file_ext}"
 
     return new_filename
 
-def get_file_extension(file_path: str) -> str:
+def get_filename_and_extension(file_path: str | Path) -> tuple[str, str]:
     """
-    Extract the file extension from the given file path and return it in lowercase.
-    If no extension is found, return an empty string.
+    Extract the filename without extension and the file extension from the given file path.
 
     Args:
-        file_path (str): The file path from which to extract the extension.
+        file_path (str | Path): The file path from which to extract the filename and extension.
 
     Returns:
-        str: The file extension in lowercase, or an empty string if no extension is present.
-
-    Raises:
-        ValueError: If the input path is invalid or not a file.
+        tuple[str, str]: A tuple containing the filename without extension and the file extension.
     """
-    # Ensure the file_path is a Path object
-    file_path = Path(file_path)
+    # Ensure the file_path is a string or Path object
+    file_path = str(file_path)  # Convert to string if it's a Path object
 
-    # Validate that the provided path is a file, not a directory
-    if not file_path.is_file():
-        raise ValueError(f"Invalid file path: {file_path}")
-    
-    if file_path.is_file():
-        return file_path.suffix or ""
-    else:
-        return ""
+    # Extract the base name (filename with extension) and split it into name and extension
+    original_filename, file_ext = os.path.splitext(os.path.basename(file_path))
 
-
-def get_filename_without_extension(file_path: str | Path) -> str:
-    """
-    Extract and return the filename without the extension.
-
-    Args:
-        file_path (str | Path): The file path from which to extract the filename.
-
-    Returns:
-        str: The filename without its extension.
-    """
-    file_path = Path(file_path)
-    return file_path.stem
+    # Return the filename without extension and the file extension in lowercase
+    return original_filename, file_ext.lower()
 
 def filter_files(directory: str | Path) -> list:
     """

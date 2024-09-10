@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 import logging
 from src.config.constants import SUPPORTED_IMAGE_EXTENSIONS
-from src.utils.file_utils import generate_translated_filename, get_file_extension, get_unique_id, get_translation_destination
+from src.utils.file_utils import generate_translated_filename, get_actual_image_path
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -165,10 +165,12 @@ def update_image_link(md_file_path: Path, markdown_string: str, language_code: s
         path = parsed_url.path
         original_filename, file_ext = os.path.splitext(os.path.basename(path))
 
-        logger.info(f"link: {link}, original_filename: {original_filename}, file_ext: {file_ext}")
-
-        if file_ext.lower() in SUPPORTED_IMAGE_EXTENSIONS:
+        if file_ext in SUPPORTED_IMAGE_EXTENSIONS:
             logger.info("This is an image")
+
+            # Get the actual image path based on the markdown file path and the image link
+            actual_image_path = get_actual_image_path(link, md_file_path)
+            logger.info(f"Actual image path resolved: {actual_image_path}")
 
             # Determine the translated markdown file's path and translated image path
             translated_md_dir = translations_dir / language_code / md_file_path.relative_to(root_dir).parent
@@ -177,8 +179,7 @@ def update_image_link(md_file_path: Path, markdown_string: str, language_code: s
             rel_path = '../' + os.path.relpath(translated_images_dir, translated_md_dir)
 
             # Construct the new image path
-            hash = get_unique_id(str(md_file_path))
-            new_filename = f"{original_filename}.{hash}.{language_code}{file_ext}"
+            new_filename = generate_translated_filename(actual_image_path, language_code, root_dir)
             updated_link = os.path.join(rel_path, new_filename).replace(os.path.sep, '/')
 
             # Replace the image link in the markdown

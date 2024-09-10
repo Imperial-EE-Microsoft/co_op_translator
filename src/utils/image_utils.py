@@ -10,7 +10,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageStat
 import matplotlib.pyplot as plt
 from src.config.font_config import FontConfig
-from src.utils.file_utils import get_file_extension
+from src.utils.file_utils import get_filename_and_extension
 
 def save_bounding_boxes(image_path, bounding_boxes):
     """
@@ -235,7 +235,7 @@ def get_image_mode(image_path):
     Returns:
         str: 'RGBA' for PNG files, 'RGB' for JPG/JPEG files.
     """
-    extension = get_file_extension(image_path)
+    extension = get_filename_and_extension(image_path)[1]
     if extension in ['.png']:
         return 'RGBA'
     elif extension in ['.jpg', '.jpeg']:

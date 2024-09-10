@@ -6,7 +6,7 @@ from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from src.translators import text_translator, image_translator, markdown_translator
 from src.config.base_config import Config
 from src.config.constants import SUPPORTED_IMAGE_EXTENSIONS
-from src.utils.file_utils import read_input_file, handle_empty_document, get_file_extension, filter_files
+from src.utils.file_utils import read_input_file, handle_empty_document, get_filename_and_extension, filter_files
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -18,7 +18,7 @@ class ProjectTranslator:
         self.translations_dir = self.root_dir / 'translations'
         self.image_dir = self.root_dir / 'translated_images'
         self.text_translator = text_translator.TextTranslator()
-        self.image_translator = image_translator.ImageTranslator(default_output_dir=self.image_dir)
+        self.image_translator = image_translator.ImageTranslator(default_output_dir=self.image_dir, root_dir=self.root_dir)
         self.markdown_translator = markdown_translator.MarkdownTranslator(self.root_dir)
         self.kernel = self._initialize_kernel()
 
@@ -94,7 +94,7 @@ class ProjectTranslator:
     async def process_all_image_files(self):
         tasks = []
         for image_file_path in filter_files(self.root_dir):
-            if get_file_extension(image_file_path) in SUPPORTED_IMAGE_EXTENSIONS:
+            if get_filename_and_extension(image_file_path)[1] in SUPPORTED_IMAGE_EXTENSIONS:
                 for language_code in self.language_codes:
                     tasks.append(self.translate_image(image_file_path, language_code))
         await asyncio.gather(*tasks)

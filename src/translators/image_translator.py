@@ -1,4 +1,5 @@
 import os
+import logging
 import numpy as np
 from PIL import Image, ImageFont
 from pathlib import Path
@@ -18,8 +19,11 @@ from src.config.base_config import Config
 from src.translators.text_translator import TextTranslator
 from src.utils.file_utils import generate_translated_filename
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 class ImageTranslator:
-    def __init__(self, default_output_dir='./translated_images'):
+    def __init__(self, default_output_dir='./translated_images', root_dir='.'):
         """
         Initialize the ImageTranslator with a default output directory.
 
@@ -28,6 +32,7 @@ class ImageTranslator:
         """
         self.text_translator = TextTranslator()
         self.font_config = FontConfig()
+        self.root_dir = Path(root_dir)
         self.default_output_dir = default_output_dir
         os.makedirs(self.default_output_dir, exist_ok=True)
 
@@ -133,9 +138,13 @@ class ImageTranslator:
             # Convert the warped text image back to PIL format and paste it onto the original image
             warped_text_image_pil = Image.fromarray(warped_text_image)
             image = Image.alpha_composite(image, warped_text_image_pil)
+        
+        actual_image_path = Path(image_path).resolve()
 
         # Generate the new filename based on the original file name, hash, and language code
-        new_filename = generate_translated_filename(image_path, target_language_code)
+        new_filename = generate_translated_filename(actual_image_path, target_language_code, self.root_dir)
+
+        logger.info(f"Resolved image path in plot_annotated_image: {actual_image_path}")
 
         # Determine the output path using pathlib
         if destination_path is None:
