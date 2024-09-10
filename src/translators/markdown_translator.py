@@ -65,17 +65,9 @@ class MarkdownTranslator:
         # Translate each chunk asynchronously
         results = await self._run_prompts(prompts)
         translated_content = "\n".join(results)
-
-        # Set the base directory for image link updating based on the file path
-        if 'src' in md_file_path.parts:
-            docs_dir = self.root_dir / 'src'  # Base directory for src files
-        elif 'docs' in md_file_path.parts:
-            docs_dir = self.root_dir / 'docs'  # Base directory for docs files
-        else:
-            docs_dir = self.root_dir  # Base directory for other files
-
+        
         # Update image links in the translated content
-        updated_content = update_image_link(md_file_path, translated_content, language_code, docs_dir)
+        updated_content = update_image_link(md_file_path, translated_content, language_code, self.root_dir)
 
         # Generate and append the translated disclaimer
         disclaimer = await self.generate_disclaimer(language_code)
