@@ -1,6 +1,6 @@
 """
 This module contains utility functions for handling text and generating prompts.
-Functions include generating translation prompts, processing responses from OpenAI.
+Functions include generating translation prompts and processing responses from OpenAI.
 """
 
 import re
