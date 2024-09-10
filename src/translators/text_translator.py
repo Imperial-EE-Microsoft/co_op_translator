@@ -21,7 +21,7 @@ class TextTranslator:
 
     def translate_image_text(self, text_data, target_language):
         """
-        Translate text data using the Azure OpenAI API.
+        Translate text data in image using the Azure OpenAI API.
 
         Args:
             text_data (list): List of text lines to be translated.
@@ -40,3 +40,26 @@ class TextTranslator:
             max_tokens=2000
         )
         return extract_yaml_lines(remove_code_backticks(response.choices[0].message.content))
+
+    def translate_text(self, text, target_language):
+        """
+        Translate a given text into the target language using the Azure OpenAI API.
+
+        Args:
+            text (str): The text to be translated.
+            target_language (str): The target language code.
+
+        Returns:
+            str: The translated text.
+        """
+        prompt = f"Translate the following text into {target_language}:\n\n{text}"
+        response = self.client.chat.completions.create(
+            model=Config.AZURE_OPENAI_MODEL_NAME,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=2000
+        )
+        translated_text = remove_code_backticks(response.choices[0].message.content)
+        return translated_text

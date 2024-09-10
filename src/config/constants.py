@@ -1,0 +1,1 @@
+SUPPORTED_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg']
