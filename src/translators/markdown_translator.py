@@ -9,7 +9,6 @@ from src.config.base_config import Config
 from src.config.font_config import FontConfig
 import time
 
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 class MarkdownTranslator:

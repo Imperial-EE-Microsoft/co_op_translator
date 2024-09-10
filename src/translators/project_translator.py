@@ -9,7 +9,6 @@ from src.config.constants import SUPPORTED_IMAGE_EXTENSIONS
 from src.utils.file_utils import read_input_file, handle_empty_document, get_filename_and_extension, filter_files
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 class ProjectTranslator:
     def __init__(self, language_codes, root_dir='.'):

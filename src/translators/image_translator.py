@@ -20,7 +20,6 @@ from src.translators.text_translator import TextTranslator
 from src.utils.file_utils import generate_translated_filename
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 class ImageTranslator:
     def __init__(self, default_output_dir='./translated_images', root_dir='.'):

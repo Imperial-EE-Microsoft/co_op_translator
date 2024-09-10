@@ -13,7 +13,6 @@ from src.config.constants import SUPPORTED_IMAGE_EXTENSIONS
 from src.utils.file_utils import generate_translated_filename, get_actual_image_path
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 def generate_prompt_template(output_lang: str, document_chunk: str, is_rtl: bool) -> str:
     """

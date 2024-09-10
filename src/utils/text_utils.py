@@ -6,8 +6,7 @@ Functions include generating translation prompts, processing responses from Open
 import re
 import logging
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG) 
+logger = logging.getLogger(__name__) 
 
 def gen_image_translation_prompt(text_data, language):
     """

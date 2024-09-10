@@ -10,7 +10,6 @@ import os
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 def read_input_file(input_file: str | Path) -> str:
     """
