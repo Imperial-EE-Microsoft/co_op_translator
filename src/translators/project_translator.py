@@ -1,5 +1,4 @@
 import logging
-import shutil
 from pathlib import Path
 import asyncio
 from semantic_kernel import Kernel
