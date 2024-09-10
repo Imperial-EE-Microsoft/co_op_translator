@@ -166,3 +166,31 @@ def filter_files(directory: str | Path) -> list:
     """
     directory = Path(directory)
     return [file for file in directory.glob('**/*') if file.is_file()]
+
+def reset_translation_directories(translations_dir: Path, image_dir: Path, language_codes: list):
+    """
+    Remove existing translation and translated_images directories if they exist,
+    and then create new ones.
+    
+    Args:
+        translations_dir (Path): The directory where translations are stored.
+        image_dir (Path): The directory where translated images are stored.
+        language_codes (list): A list of language codes for creating language-specific directories.
+    """
+    # Remove existing directories
+    if translations_dir.exists():
+        shutil.rmtree(translations_dir)
+        logger.info(f"Removed existing translations directory: {translations_dir}")
+    
+    if image_dir.exists():
+        shutil.rmtree(image_dir)
+        logger.info(f"Removed existing translated_images directory: {image_dir}")
+
+    # Create new directories
+    for lang_code in language_codes:
+        lang_dir = translations_dir / lang_code
+        lang_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Created directory for {lang_code}: {lang_dir}")
+    
+    image_dir.mkdir(parents=True, exist_ok=True)
+    logger.info(f"Created translated_images directory: {image_dir}")
