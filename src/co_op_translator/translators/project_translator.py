@@ -3,10 +3,10 @@ from pathlib import Path
 import asyncio
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
-from src.translators import text_translator, image_translator, markdown_translator
-from src.config.base_config import Config
-from src.config.constants import SUPPORTED_IMAGE_EXTENSIONS
-from src.utils.file_utils import read_input_file, handle_empty_document, get_filename_and_extension, filter_files, reset_translation_directories
+from src.co_op_translator.translators import text_translator, image_translator, markdown_translator
+from src.co_op_translator.config.base_config import Config
+from src.co_op_translator.config.constants import SUPPORTED_IMAGE_EXTENSIONS
+from src.co_op_translator.utils.file_utils import read_input_file, handle_empty_document, get_filename_and_extension, filter_files, reset_translation_directories
 
 logger = logging.getLogger(__name__)
 
