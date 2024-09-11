@@ -9,8 +9,8 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageStat
 import matplotlib.pyplot as plt
-from src.config.font_config import FontConfig
-from src.utils.file_utils import get_filename_and_extension
+from src.co_op_translator.config.font_config import FontConfig
+from src.co_op_translator.utils.file_utils import get_filename_and_extension
 
 def save_bounding_boxes(image_path, bounding_boxes):
     """

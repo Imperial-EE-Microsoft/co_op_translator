@@ -1,5 +1,5 @@
 import click
-from src.translators.project_translator import ProjectTranslator
+from src.co_op_translator.translators.project_translator import ProjectTranslator
 
 @click.command()
 @click.option('--language-codes', '-l', required=True, help='Space-separated language codes for translation (e.g., "es fr de").')

@@ -9,8 +9,8 @@ import tiktoken
 from pathlib import Path
 from urllib.parse import urlparse
 import logging
-from src.config.constants import SUPPORTED_IMAGE_EXTENSIONS
-from src.utils.file_utils import generate_translated_filename, get_actual_image_path
+from src.co_op_translator.config.constants import SUPPORTED_IMAGE_EXTENSIONS
+from src.co_op_translator.utils.file_utils import generate_translated_filename, get_actual_image_path
 
 logger = logging.getLogger(__name__)
 

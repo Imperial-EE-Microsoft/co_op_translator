@@ -1,6 +1,6 @@
 import os
-from src.translators.image_translator import ImageTranslator
-from src.utils.image_utils import (
+from src.co_op_translator.translators.image_translator import ImageTranslator
+from src.co_op_translator.utils.image_utils import (
     save_bounding_boxes,
     plot_bounding_boxes,
 )
