@@ -1,9 +1,12 @@
 import os
-from src.co_op_translator.translators.image_translator import ImageTranslator
-from src.co_op_translator.utils.image_utils import (
+import logging
+from co_op_translator.translators.image_translator import ImageTranslator
+from co_op_translator.utils.image_utils import (
     save_bounding_boxes,
     plot_bounding_boxes,
 )
+
+logger = logging.getLogger(__name__)
 
 class ImageAnalyzer:
     def __init__(self, output_dir="./bounding_boxes"):

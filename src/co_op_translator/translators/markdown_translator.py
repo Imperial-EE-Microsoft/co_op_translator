@@ -4,9 +4,9 @@ from pathlib import Path
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.prompt_template.prompt_template_config import PromptTemplateConfig
-from src.co_op_translator.utils.markdown_utils import process_markdown, update_image_link, generate_prompt_template
-from src.co_op_translator.config.base_config import Config
-from src.co_op_translator.config.font_config import FontConfig
+from co_op_translator.utils.markdown_utils import process_markdown, update_image_link, generate_prompt_template
+from co_op_translator.config.base_config import Config
+from co_op_translator.config.font_config import FontConfig
 import time
 
 logger = logging.getLogger(__name__)

@@ -5,6 +5,7 @@
 .venv
 env/
 venv/
+venv2/
 ENV/
 env.bak/
 venv.bak/
@@ -24,6 +25,9 @@ venv.bak/
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+# Generated output
+dist
 
 # VisualStudioCode Patch
 # Ignore all local history of files
