@@ -3,8 +3,8 @@ import logging
 import numpy as np
 from PIL import Image, ImageFont
 from pathlib import Path
-from src.co_op_translator.config.font_config import FontConfig
-from src.co_op_translator.utils.image_utils import (
+from co_op_translator.config.font_config import FontConfig
+from co_op_translator.utils.image_utils import (
     get_average_color,
     get_text_color,
     create_filled_polygon_mask,
@@ -15,9 +15,9 @@ from src.co_op_translator.utils.image_utils import (
 from azure.ai.vision.imageanalysis import ImageAnalysisClient
 from azure.ai.vision.imageanalysis.models import VisualFeatures
 from azure.core.credentials import AzureKeyCredential
-from src.co_op_translator.config.base_config import Config
-from src.co_op_translator.translators.text_translator import TextTranslator
-from src.co_op_translator.utils.file_utils import generate_translated_filename
+from co_op_translator.config.base_config import Config
+from co_op_translator.translators.text_translator import TextTranslator
+from co_op_translator.utils.file_utils import generate_translated_filename
 
 logger = logging.getLogger(__name__)
 

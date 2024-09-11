@@ -1,6 +1,9 @@
 from openai import AzureOpenAI
-from src.co_op_translator.config.base_config import Config
-from src.co_op_translator.utils.text_utils import gen_image_translation_prompt, remove_code_backticks, extract_yaml_lines
+import logging
+from co_op_translator.config.base_config import Config
+from co_op_translator.utils.text_utils import gen_image_translation_prompt, remove_code_backticks, extract_yaml_lines
+
+logger = logging.getLogger(__name__)
 
 class TextTranslator:
     def __init__(self):
