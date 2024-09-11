@@ -6,7 +6,7 @@ from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from co_op_translator.translators import text_translator, image_translator, markdown_translator
 from co_op_translator.config.base_config import Config
-from co_op_translator.config.constants import SUPPORTED_IMAGE_EXTENSIONS
+from co_op_translator.config.constants import SUPPORTED_IMAGE_EXTENSIONS, EXCLUDED_DIRS
 from co_op_translator.utils.file_utils import read_input_file, handle_empty_document, get_filename_and_extension, filter_files, reset_translation_directories
 
 logger = logging.getLogger(__name__)
@@ -87,15 +87,18 @@ class ProjectTranslator:
         Process and translate all markdown files in the project directory.
         """
         tasks = []
-        for md_file_path in self.root_dir.glob('**/*.md'):
-            md_file_path = md_file_path.resolve()
-            for language_code in self.language_codes:
-                tasks.append(self.translate_markdown(md_file_path, language_code))
+        markdown_files = filter_files(self.root_dir, EXCLUDED_DIRS)
+        for md_file_path in markdown_files:
+            if md_file_path.suffix == '.md':
+                md_file_path = md_file_path.resolve()
+                for language_code in self.language_codes:
+                    tasks.append(self.translate_markdown(md_file_path, language_code))
         await asyncio.gather(*tasks)
 
     async def process_all_image_files(self):
         tasks = []
-        for image_file_path in filter_files(self.root_dir):
+        image_files = filter_files(self.root_dir, EXCLUDED_DIRS)
+        for image_file_path in image_files:
             image_file_path = image_file_path.resolve()
             if get_filename_and_extension(image_file_path)[1] in SUPPORTED_IMAGE_EXTENSIONS:
                 for language_code in self.language_codes:
