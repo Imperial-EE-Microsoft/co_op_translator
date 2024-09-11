@@ -154,18 +154,27 @@ def get_filename_and_extension(file_path: str | Path) -> tuple[str, str]:
     # Return the filename without extension and the file extension in lowercase
     return original_filename, file_ext.lower()
 
-def filter_files(directory: str | Path) -> list:
+def filter_files(directory: str | Path, excluded_dirs) -> list:
     """
-    Filter and return only the files in the given directory, excluding directories.
+    Filter and return only the files in the given directory, excluding specified directories.
 
     Args:
         directory (str | Path): The directory path to search for files.
+        excluded_dirs (set): A set of directory names to exclude from the search.
 
     Returns:
-        list: A list of Path objects representing only the files (excluding directories).
+        list: A list of Path objects representing only the files (excluding specified directories).
     """
     directory = Path(directory)
-    return [file for file in directory.glob('**/*') if file.is_file()]
+    files = []
+
+    # Recursively traverse the directory
+    for path in directory.rglob('*'):
+        # Check if the path is a file and does not contain any excluded directories
+        if path.is_file() and not any(excluded_dir in path.parts for excluded_dir in excluded_dirs):
+            files.append(path)
+
+    return files
 
 def reset_translation_directories(translations_dir: Path, image_dir: Path, language_codes: list):
     """
