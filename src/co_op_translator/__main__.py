@@ -5,7 +5,7 @@ import yaml
 from co_op_translator.translators.project_translator import ProjectTranslator
 
 @click.command()
-@click.option('--language-codes', '-l', required=True, help='Space-separated language codes for translation (e.g., "es fr de").')
+@click.option('--language-codes', '-l', required=True, help='Space-separated language codes for translation (e.g., "es fr de" or "all").')
 @click.option('--root-dir', '-r', default='.', help='Root directory of the project (default is current directory).')
 @click.option('--debug', is_flag=True, help='Enable debug mode (default is INFO level, set to DEBUG if enabled).')
 def main(language_codes, root_dir, debug):
@@ -31,7 +31,7 @@ def main(language_codes, root_dir, debug):
     else:
         logging.basicConfig(level=logging.CRITICAL)
 
-    # If 'all' is passed, load all language codes from the font mapping file
+    # If 'all' is passed for language_codes, load all available language codes from the font mapping file
     if language_codes == "all":
         with importlib.resources.path('co_op_translator.fonts', 'font_language_mappings.yml') as mappings_path:
             with open(mappings_path, 'r', encoding='utf-8') as file:
