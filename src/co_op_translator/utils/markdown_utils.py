@@ -141,9 +141,9 @@ def process_markdown(content: str, max_tokens=4096, encoding='o200k_base') -> li
 
     for i, chunk in enumerate(chunks):
         chunk_tokens = count_tokens(chunk, tokenizer)
-        print(f"Chunk {i+1}: Length = {chunk_tokens} tokens")
+        logger.info(f"Chunk {i+1}: Length = {chunk_tokens} tokens")
         if chunk_tokens == max_tokens:
-            print("Warning: This chunk has reached the maximum token limit.")
+            logger.warning("Warning: This chunk has reached the maximum token limit.")
 
     return chunks
 

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import click
 import importlib.resources
@@ -7,22 +8,35 @@ from co_op_translator.translators.project_translator import ProjectTranslator
 @click.command()
 @click.option('--language-codes', '-l', required=True, help='Space-separated language codes for translation (e.g., "es fr de" or "all").')
 @click.option('--root-dir', '-r', default='.', help='Root directory of the project (default is current directory).')
-@click.option('--debug', is_flag=True, help='Enable debug mode (default is INFO level, set to DEBUG if enabled).')
-def main(language_codes, root_dir, debug):
+@click.option('--add', '-a', is_flag=True, default=True, help='Add new translations without deleting existing ones (default behavior).')
+@click.option('--update', '-u', is_flag=True, help='Update translations by deleting and recreating them (Warning: Existing translations will be lost).')
+@click.option('--images', '-img', is_flag=True, help='Only translate image files.')
+@click.option('--markdown', '-md', is_flag=True, help='Only translate markdown files.')
+@click.option('--debug', '-d', is_flag=True, help='Enable debug mode (default is INFO level, set to DEBUG if enabled).')
+def main(language_codes, root_dir, add, update, images, markdown, debug):
     """
-    Translate all markdown and image files in the project based on the specified language codes.
+    CLI for translating project files.
+
+    Usage examples:
     
-    Example usage:
-    translate --language-codes "es fr de"
-    translate --language-codes "all" --root-dir "./my_project"
+    1. Default behavior (add new translations without deleting existing ones):
+       translate -l "ko"
+       translate -l "es fr de" -r "./my_project"
 
-    Simplified version:
-    translate -l "es fr de"
-    translate -l "all" -r "./my_project"
+    2. Add only new Korean image translations (no existing translations are deleted):
+       translate -l "ko" -img -a
 
-    To enable debug mode:
-    translate --language-codes "es fr de" --debug
-    translate -l "es fr de" -r "./my_project" --debug
+    3. Update all Korean translations (Warning: This deletes all existing Korean translations before re-translating):
+       translate -l "ko" -u
+
+    4. Update only Korean images (Warning: This deletes all existing Korean images before re-translating):
+       translate -l "ko" -img -u
+
+    5. Add new markdown translations for Korean without affecting other translations:
+       translate -l "ko" -md -a
+
+    Debug mode example:
+    - translate -l "ko" -d: Enable debug logging.
     """
 
     if debug:
@@ -31,20 +45,43 @@ def main(language_codes, root_dir, debug):
     else:
         logging.basicConfig(level=logging.CRITICAL)
 
-    # If 'all' is passed for language_codes, load all available language codes from the font mapping file
+    # Show warning if 'all' is selected
+    if language_codes == "all":
+        click.echo("Warning: Translating all languages at once can take a significant amount of time, especially when dealing with large markdown-based open-source projects that have many documents.")
+        click.echo("For better efficiency, it's recommended that contributors handle individual languages and upload their translations separately.")
+        # Option to proceed or not
+        confirmation_all = click.prompt("Do you still want to proceed with translating all languages? Type 'yes' to continue", type=str)
+        
+        if confirmation_all.lower() != 'yes':
+            click.echo("Translation for 'all' languages cancelled.")
+            return
+        else:
+            click.echo("Proceeding with translation for all languages...")
+
+    # Show warning and prompt if update is selected
+    if update:
+        click.echo(f"Warning: The update command will delete all existing translations for '{language_codes}' and re-translate everything.")
+        confirmation_update = click.prompt("Do you want to continue? Type 'yes' to proceed", type=str)
+        
+        if confirmation_update.lower() != 'yes':
+            click.echo("Update cancelled by user.")
+            return
+        else:
+            click.echo("Proceeding with update...")
+
+    # Language code parsing logic
     if language_codes == "all":
         with importlib.resources.path('co_op_translator.fonts', 'font_language_mappings.yml') as mappings_path:
             with open(mappings_path, 'r', encoding='utf-8') as file:
                 font_mappings = yaml.safe_load(file)
-                # Only extract the top-level language codes (e.g., 'ar', 'en', 'fr', etc.)
                 language_codes = " ".join([lang_code for lang_code in font_mappings if isinstance(font_mappings[lang_code], dict)])
                 logging.debug(f"Loaded language codes from font mapping: {language_codes}")
-    
-    # Initialize the ProjectTranslator
+
+    # Initialize ProjectTranslator
     translator = ProjectTranslator(language_codes, root_dir)
-    
-    # Translate the project
-    translator.translate_project()
+
+    # Call translate_project
+    translator.translate_project(images=images, markdown=markdown, update=update)
 
     click.echo(f"Project translation completed for languages: {language_codes}")
 
