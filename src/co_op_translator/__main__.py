@@ -36,7 +36,8 @@ def main(language_codes, root_dir, debug):
         with importlib.resources.path('co_op_translator.fonts', 'font_language_mappings.yml') as mappings_path:
             with open(mappings_path, 'r', encoding='utf-8') as file:
                 font_mappings = yaml.safe_load(file)
-                language_codes = " ".join(font_mappings.keys())  # Use all keys (languages) from the font mapping file
+                # Only extract the top-level language codes (e.g., 'ar', 'en', 'fr', etc.)
+                language_codes = " ".join([lang_code for lang_code in font_mappings if isinstance(font_mappings[lang_code], dict)])
                 logging.debug(f"Loaded language codes from font mapping: {language_codes}")
     
     # Initialize the ProjectTranslator
