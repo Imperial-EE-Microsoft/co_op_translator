@@ -1,9 +1,11 @@
 import logging
 import click
+import importlib.resources
+import yaml
 from co_op_translator.translators.project_translator import ProjectTranslator
 
 @click.command()
-@click.option('--language-codes', '-l', required=True, help='Space-separated language codes for translation (e.g., "es fr de").')
+@click.option('--language-codes', '-l', required=True, help='Space-separated language codes for translation (e.g., "es fr de" or "all").')
 @click.option('--root-dir', '-r', default='.', help='Root directory of the project (default is current directory).')
 @click.option('--debug', is_flag=True, help='Enable debug mode (default is INFO level, set to DEBUG if enabled).')
 def main(language_codes, root_dir, debug):
@@ -29,6 +31,15 @@ def main(language_codes, root_dir, debug):
     else:
         logging.basicConfig(level=logging.CRITICAL)
 
+    # If 'all' is passed for language_codes, load all available language codes from the font mapping file
+    if language_codes == "all":
+        with importlib.resources.path('co_op_translator.fonts', 'font_language_mappings.yml') as mappings_path:
+            with open(mappings_path, 'r', encoding='utf-8') as file:
+                font_mappings = yaml.safe_load(file)
+                # Only extract the top-level language codes (e.g., 'ar', 'en', 'fr', etc.)
+                language_codes = " ".join([lang_code for lang_code in font_mappings if isinstance(font_mappings[lang_code], dict)])
+                logging.debug(f"Loaded language codes from font mapping: {language_codes}")
+    
     # Initialize the ProjectTranslator
     translator = ProjectTranslator(language_codes, root_dir)
     
