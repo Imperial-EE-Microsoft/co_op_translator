@@ -1,4 +1,5 @@
-# translation_public
+# Co Op Translator: Easily automate multilingual translations for your projects powered by advanced LLM technology
+
 
 ## Setting up the Development Environment
 
