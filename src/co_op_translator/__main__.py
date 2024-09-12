@@ -47,13 +47,5 @@ def main(language_codes, root_dir, debug):
 
     click.echo(f"Project translation completed for languages: {language_codes}")
 
-    # Initialize the ProjectTranslator
-    translator = ProjectTranslator(language_codes, root_dir)
-    
-    # Translate the project
-    translator.translate_project()
-
-    click.echo(f"Project translation completed for languages: {language_codes}")
-
 if __name__ == '__main__':
     main()
