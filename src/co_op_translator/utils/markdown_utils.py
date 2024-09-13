@@ -35,6 +35,7 @@ def generate_prompt_template(output_lang: str, document_chunk: str, is_rtl: bool
         prompt = f"""
         Translate the following markdown file to {output_lang}.
         Make sure the translation does not sound too literal. Make sure you translate comments as well.
+        Do not translate  any XML or HTML tags.
         Do not translate any [!NOTE], [!WARNING], [!TIP], [!IMPORTANT], or [!CAUTION].
         Do not translate any entities, such as variable names, function names, or class names, but keep them in the file.
         Do not translate any urls or paths, but keep them in the file.

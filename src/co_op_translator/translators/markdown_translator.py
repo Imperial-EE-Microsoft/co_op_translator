@@ -62,7 +62,7 @@ class MarkdownTranslator:
         document_chunks = process_markdown(document)
         prompts = [generate_prompt_template(language_code, chunk, self.font_config.is_rtl(language_code)) for chunk in document_chunks]
 
-        # Translate each chunk asynchronously
+        # Translate each chunk asynchronouslys
         results = await self._run_prompts(prompts)
         translated_content = "\n".join(results)
         
@@ -130,6 +130,8 @@ class MarkdownTranslator:
             result = await self.kernel.invoke(function)
             end_time = time.time()
             logger.info(f"Prompt {index}/{total} completed in {end_time - start_time} seconds")
+
+            await asyncio.sleep(1) # Set delay time according to API rate limits
             return str(result)
         except Exception as e:
             logger.error(f"Error in prompt {index}/{total} - {prompt}: {e}")

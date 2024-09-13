@@ -5,6 +5,8 @@ import importlib.resources
 import yaml
 from co_op_translator.translators.project_translator import ProjectTranslator
 
+logger = logging.getLogger(__name__)
+
 @click.command()
 @click.option('--language-codes', '-l', required=True, help='Space-separated language codes for translation (e.g., "es fr de" or "all").')
 @click.option('--root-dir', '-r', default='.', help='Root directory of the project (default is current directory).')
@@ -83,7 +85,7 @@ def main(language_codes, root_dir, add, update, images, markdown, debug):
     # Call translate_project
     translator.translate_project(images=images, markdown=markdown, update=update)
 
-    click.echo(f"Project translation completed for languages: {language_codes}")
+    logger.info(f"Project translation completed for languages: {language_codes}")
 
 if __name__ == '__main__':
     main()

@@ -67,7 +67,7 @@ class ImageTranslator:
                 visual_features=[VisualFeatures.READ],
             )
 
-        if result.read is not None:
+        if result.read is not None and result.read.blocks:
             line_bounding_boxes = []
             for line in result.read.blocks[0].lines:
                 bounding_box = []
