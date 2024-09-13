@@ -2,13 +2,14 @@ import logging
 import os
 from pathlib import Path
 import asyncio
-from tqdm.asyncio import tqdm_asyncio
+from tqdm.asyncio import tqdm
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from co_op_translator.translators import text_translator, image_translator, markdown_translator
 from co_op_translator.config.base_config import Config
 from co_op_translator.config.constants import SUPPORTED_IMAGE_EXTENSIONS, EXCLUDED_DIRS
 from co_op_translator.utils.file_utils import read_input_file, handle_empty_document, get_filename_and_extension, filter_files, reset_translation_directories, generate_translated_filename, delete_translated_images_by_language_code, delete_translated_markdown_files_by_language_code
+from co_op_translator.utils.task_utils import worker  # Import worker function
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,9 @@ class ProjectTranslator:
         self.kernel = self._initialize_kernel()
 
     def _initialize_kernel(self):
+        """
+        Initialize the kernel with Azure OpenAI service.
+        """
         kernel = Kernel()
         service_id = "chat-gpt"
 
@@ -38,6 +42,9 @@ class ProjectTranslator:
         return kernel
 
     async def translate_image(self, image_path, language_code):
+        """
+        Translate an image and handle file permissions or path errors.
+        """
         image_path = Path(image_path).resolve()
         if image_path.exists() and image_path.is_file():
             logger.info(f"Image exists: {image_path}")
@@ -57,10 +64,10 @@ class ProjectTranslator:
     async def translate_markdown(self, file_path, language_code):
         """
         Translate a markdown file to the specified language.
-
+        
         Args:
-            file_path (Path): Path to the markdown file to be translated.
-            language_code (str): Target language code.
+            file_path (Path): Path to the markdown file.
+            language_code (str): The target language code.
         """
         file_path = Path(file_path).resolve()
         try:
@@ -83,27 +90,51 @@ class ProjectTranslator:
         except Exception as e:
             logger.error(f"Failed to translate {file_path}: {e}")
 
+    async def process_api_requests(self, tasks, task_desc):
+        """
+        Process API requests using a queue system for better resource management.
+
+        Args:
+            tasks (list): List of coroutine tasks to process.
+            task_desc (str): Description for the progress bar.
+        """
+        task_queue = asyncio.Queue()
+
+        # Step 1: Populate the queue with tasks
+        for task in tasks:
+            task_queue.put_nowait(task)
+
+        # Step 2: Create a progress bar
+        with tqdm(total=len(tasks), desc=task_desc) as progress_bar:  # Use tqdm for async progress
+            # Step 3: Create worker tasks to process the queue
+            workers = [asyncio.create_task(worker(task_queue, progress_bar)) for _ in range(5)]
+
+            # Step 4: Wait until all tasks are processed
+            await task_queue.join()
+
+            # Ensure all workers have completed
+            for worker_task in workers:
+                worker_task.cancel()
+
     async def translate_all_markdown_files(self, update=False):
         """
-        Handles the markdown translation process. If update is True, it cleans the existing translated files
-        before processing the markdown files. If update is False, it skips translating markdown files that already exist.
+        Translate all markdown files, with optional update mode to refresh translations.
         """
         logger.info("Starting markdown translation tasks...")
 
-        # Step 1: If update is True, delete all existing translated markdown files for the specified languages
+        # Step 1: If update is True, delete all existing translated markdown files
         if update:
             for language_code in self.language_codes:
                 delete_translated_markdown_files_by_language_code(language_code, self.translations_dir)
                 logger.info(f"Deleted all translated markdown files for language: {language_code}")
 
-        # Step 2: Gather markdown files for translation
+        # Step 2: Collect markdown files for translation
         markdown_files = filter_files(self.root_dir, EXCLUDED_DIRS)
         tasks = []
 
         for md_file_path in markdown_files:
             md_file_path = md_file_path.resolve()
 
-            # Check if the file extension is a markdown file
             if md_file_path.suffix == '.md':
                 for language_code in self.language_codes:
                     relative_path = md_file_path.relative_to(self.root_dir)
@@ -111,96 +142,73 @@ class ProjectTranslator:
 
                     if not update and translated_md_path.exists():
                         logger.info(f"Skipping already translated markdown file: {translated_md_path}")
-                        continue  # Skip to the next markdown file
+                        continue
 
                     logger.info(f"Translating markdown file: {md_file_path} for language: {language_code}")
                     tasks.append(self.translate_markdown(md_file_path, language_code))
 
-                    # If tasks reach 5 items, process them asynchronously and update the progress bar
-                    if len(tasks) >= 5:
-                        await tqdm_asyncio.gather(*tasks, total=len(tasks), desc="Translating markdown files")
-                        tasks = []  # Reset tasks list after processing
-
-        # Step 3: Process any remaining tasks
-        if tasks:
-            await tqdm_asyncio.gather(*tasks, total=len(tasks), desc="Translating remaining markdown files")
-        else:
-            logger.info("No markdown translation tasks to run.")
-
+        # Step 3: Process markdown translations using API request queue
+        await self.process_api_requests(tasks, "Translating markdown files")
 
     async def translate_all_image_files(self, update=False):
         """
-        Handles the image translation process. If update is True, it cleans the existing translated files
-        before processing the images. If update is False, it skips translating images that already exist.
+        Translate all image files, with optional update mode to refresh translations.
         """
         logger.info("Starting image translation tasks...")
 
-        # Step 1: If update is True, delete all existing translated images for the specified languages
+        # Step 1: If update is True, delete all existing translated images
         if update:
             for language_code in self.language_codes:
                 delete_translated_images_by_language_code(language_code, self.image_dir)
                 logger.info(f"Deleted all translated images for language: {language_code}")
 
-        # Step 2: Gather image files for translation
+        # Step 2: Collect image files for translation
         image_files = filter_files(self.root_dir, EXCLUDED_DIRS)
         tasks = []
 
         for image_file_path in image_files:
             image_file_path = image_file_path.resolve()
 
-            # Check if the file extension is a supported image format
             if get_filename_and_extension(image_file_path)[1] in SUPPORTED_IMAGE_EXTENSIONS:
                 for language_code in self.language_codes:
                     translated_filename = generate_translated_filename(image_file_path, language_code, self.root_dir)
                     translated_image_path = Path(self.image_dir) / translated_filename
 
-                    # If not updating, skip if the translated image already exists
                     if not update and translated_image_path.exists():
                         logger.info(f"Skipping already translated image: {translated_image_path}")
-                        continue  # Skip to the next image file
+                        continue
 
-                    # Translate the image and save it to the output directory
                     logger.info(f"Translating image: {image_file_path} for language: {language_code}")
                     tasks.append(self.translate_image(image_file_path, language_code))
 
-                    # If tasks reach 5 items, process them asynchronously and update the progress bar
-                    if len(tasks) >= 5:
-                        await tqdm_asyncio.gather(*tasks, total=len(tasks), desc="Translating images")
-                        tasks = []  # Reset tasks list after processing
-
-        # Process any remaining tasks
-        if tasks:
-            await tqdm_asyncio.gather(*tasks, total=len(tasks), desc="Translating remaining images")
-        else:
-            logger.info("No image translation tasks to run.")
-
-
+        # Step 3: Process image translations using API request queue
+        await self.process_api_requests(tasks, "Translating images")
 
     async def translate_project_async(self, images=False, markdown=False, update=False):
         """
-        Translate the project by processing both markdown and image files asynchronously.
+        Translate the entire project, including both markdown and image files.
+        
+        Args:
+            images (bool): Flag to indicate if images should be translated.
+            markdown (bool): Flag to indicate if markdown files should be translated.
+            update (bool): Flag to indicate if existing translations should be updated.
         """
         logger.info("Starting project translation tasks...")
 
-        # Step 1: Based on flags, process markdown and/or image files
         tasks = []
-        
-        # If neither images nor markdown is specified, translate both by default
         if not images and not markdown:
             images = True
             markdown = True
         
-        # Process image translation
+        # Add tasks for image translation
         if images:
-            logger.info(f"Starting image translation tasks (update={update})...")
             tasks.append(self.translate_all_image_files(update=update))
 
-        # Process markdown translation
+        # Add tasks for markdown translation
         if markdown:
-            logger.info(f"Starting markdown translation tasks (update={update})...")
             tasks.append(self.translate_all_markdown_files(update=update))
 
-        # Step 2: Run tasks asynchronously
+        # Execute translation tasks
         if tasks:
             await asyncio.gather(*tasks)
         else:
@@ -209,5 +217,10 @@ class ProjectTranslator:
     def translate_project(self, images=False, markdown=False, update=False):
         """
         Public method to start the project translation.
+
+        Args:
+            images (bool): Whether to translate images.
+            markdown (bool): Whether to translate markdown files.
+            update (bool): Whether to update existing translations.
         """
         asyncio.run(self.translate_project_async(images=images, markdown=markdown, update=update))
