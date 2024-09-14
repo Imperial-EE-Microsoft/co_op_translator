@@ -172,27 +172,55 @@ class ImageTranslator:
                                             If None, save in default location (./translated_images/).
 
         Returns:
-            str: The path to the annotated image.
+            str: The path to the annotated image, or the original image saved as a new file in case of errors.
         """
-
         image_path = Path(image_path)
 
-        # Extract text and bounding boxes from the image
-        line_bounding_boxes = self.extract_line_bounding_boxes(image_path)
+        try:
+            # Extract text and bounding boxes from the image
+            line_bounding_boxes = self.extract_line_bounding_boxes(image_path)
 
-        # Check if any text was recognized
-        if not line_bounding_boxes:
-            print("No text was recognized in the image.")
-            return image_path  # Return the original image path if no text is found
-        
-        # Extract the text data from the bounding boxes
-        text_data = [line['text'] for line in line_bounding_boxes]
+            # Generate the new filename based on the original file name, hash, and language code
+            actual_image_path = Path(image_path).resolve()
+            new_filename = generate_translated_filename(actual_image_path, target_language_code, self.root_dir)
 
-        # Retrieve the name of the target language based on the language code
-        target_language_name = self.font_config.get_language_name(target_language_code)
-        
-        # Translate the text data into the target language
-        translated_text_list = self.text_translator.translate_image_text(text_data, target_language_name)
-        
-        # Annotate the image with the translated text and save the result
-        return self.plot_annotated_image(image_path, line_bounding_boxes, translated_text_list, target_language_code, destination_path)
+            # Determine the output path using pathlib
+            if destination_path is None:
+                output_path = Path(self.default_output_dir) / new_filename
+            else:
+                output_path = Path(destination_path) / new_filename
+
+            # Check if any text was recognized
+            if not line_bounding_boxes:
+                logger.info(f"No text was recognized in the image: {image_path}. Saving the original image as the translated image.")
+                
+                # Load the original image and save it with the new name
+                original_image = Image.open(image_path)
+                original_image.save(output_path)
+                
+                return str(output_path)  # Return the new image path with original content
+
+            # Extract the text data from the bounding boxes
+            text_data = [line['text'] for line in line_bounding_boxes]
+
+            # Retrieve the name of the target language based on the language code
+            target_language_name = self.font_config.get_language_name(target_language_code)
+            
+            # Translate the text data into the target language
+            translated_text_list = self.text_translator.translate_image_text(text_data, target_language_name)
+            
+            # Annotate the image with the translated text and save the result
+            return self.plot_annotated_image(image_path, line_bounding_boxes, translated_text_list, target_language_code, destination_path)
+
+        except Exception as e:
+            logger.error(f"Failed to translate image {image_path} due to an error: {e}. Saving the original image instead.")
+
+            # Load the original image and save it with the new name
+            actual_image_path = Path(image_path).resolve()
+            new_filename = generate_translated_filename(actual_image_path, target_language_code, self.root_dir)
+            output_path = Path(self.default_output_dir) / new_filename
+
+            original_image = Image.open(image_path)
+            original_image.save(output_path)
+            
+            return str(output_path)  # Return the path to the original image with the new name
