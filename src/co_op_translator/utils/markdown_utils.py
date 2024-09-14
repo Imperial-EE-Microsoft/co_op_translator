@@ -34,6 +34,8 @@ def generate_prompt_template(output_lang: str, document_chunk: str, is_rtl: bool
     else:
         prompt = f"""
         Translate the following markdown file to {output_lang}.
+        This file is written in Markdown format. Do not treat this as XML or HTML.
+        Ensure that the Markdown syntax (e.g., headers, lists, links, and images) is preserved.
         Make sure the translation does not sound too literal. Make sure you translate comments as well.
         Do not translate  any XML or HTML tags.
         Do not translate any [!NOTE], [!WARNING], [!TIP], [!IMPORTANT], or [!CAUTION].
