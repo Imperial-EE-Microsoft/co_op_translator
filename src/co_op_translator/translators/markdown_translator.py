@@ -4,7 +4,7 @@ from pathlib import Path
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.prompt_template.prompt_template_config import PromptTemplateConfig
-from co_op_translator.utils.markdown_utils import process_markdown, update_image_link, generate_prompt_template
+from co_op_translator.utils.markdown_utils import process_markdown, update_image_link, generate_prompt_template, count_links_in_markdown, process_markdown_with_many_links
 from co_op_translator.config.base_config import Config
 from co_op_translator.config.font_config import FontConfig
 import time
@@ -45,7 +45,7 @@ class MarkdownTranslator:
 
     async def translate_markdown(self, document: str, language_code: str, md_file_path: str | Path) -> str:
         """
-        Translate the markdown document to the specified language.
+        Translate the markdown document to the specified language, handling documents with more than 10 links by splitting them into chunks.
 
         Args:
             document (str): The content of the markdown file.
@@ -53,26 +53,28 @@ class MarkdownTranslator:
             md_file_path (str | Path): The file path of the markdown file.
 
         Returns:
-            str: The translated content with updated image links.
+            str: The translated content with updated image links and a disclaimer appended.
         """
-
         md_file_path = Path(md_file_path)
-        
-        # Process the markdown document into chunks
-        document_chunks = process_markdown(document)
+        link_limit = 30
+
+        if count_links_in_markdown(document) > link_limit:
+            logger.info(f"Document contains more than {link_limit} links, splitting the document into chunks.")
+            document_chunks = process_markdown_with_many_links(document, link_limit)
+        else:
+            logger.info(f"Document contains {link_limit} or fewer links, processing normally.")
+            document_chunks = process_markdown(document)
+
         prompts = [generate_prompt_template(language_code, chunk, self.font_config.is_rtl(language_code)) for chunk in document_chunks]
 
-        # Translate each chunk asynchronouslys
         results = await self._run_prompts(prompts)
         translated_content = "\n".join(results)
-        
-        # Update image links in the translated content
+
         updated_content = update_image_link(md_file_path, translated_content, language_code, self.root_dir)
 
-        # Generate and append the translated disclaimer
         disclaimer = await self.generate_disclaimer(language_code)
-        updated_content += "\n\n" + disclaimer  # Append disclaimer to the translated content
-
+        updated_content += "\n\n" + disclaimer
+        
         return updated_content
 
     async def _run_prompts(self, prompts):
@@ -131,7 +133,7 @@ class MarkdownTranslator:
             end_time = time.time()
             logger.info(f"Prompt {index}/{total} completed in {end_time - start_time} seconds")
 
-            await asyncio.sleep(1) # Set delay time according to API rate limits
+            await asyncio.sleep(1)
             return str(result)
         except Exception as e:
             logger.error(f"Error in prompt {index}/{total} - {prompt}: {e}")
@@ -148,13 +150,11 @@ class MarkdownTranslator:
             str: The translated disclaimer text.
         """
 
-        # Generate the disclaimer prompt
         disclaimer_prompt = f""" Translate the following text to {output_lang}.
 
         Disclaimer: The translation was translated from its original by an AI model and may not be perfect. 
         Please review the output and make any necessary corrections."""
-        
-        # Run the disclaimer prompt through the translation system
+
         disclaimer = await self._run_prompt(disclaimer_prompt, 'disclaimer prompt', 1)
         
         return disclaimer
