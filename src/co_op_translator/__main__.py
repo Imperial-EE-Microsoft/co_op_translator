@@ -5,6 +5,8 @@ import importlib.resources
 import yaml
 from co_op_translator.translators.project_translator import ProjectTranslator
 
+logger = logging.getLogger(__name__)
+
 @click.command()
 @click.option('--language-codes', '-l', required=True, help='Space-separated language codes for translation (e.g., "es fr de" or "all").')
 @click.option('--root-dir', '-r', default='.', help='Root directory of the project (default is current directory).')
@@ -12,13 +14,14 @@ from co_op_translator.translators.project_translator import ProjectTranslator
 @click.option('--update', '-u', is_flag=True, help='Update translations by deleting and recreating them (Warning: Existing translations will be lost).')
 @click.option('--images', '-img', is_flag=True, help='Only translate image files.')
 @click.option('--markdown', '-md', is_flag=True, help='Only translate markdown files.')
-@click.option('--debug', '-d', is_flag=True, help='Enable debug mode (default is INFO level, set to DEBUG if enabled).')
-def main(language_codes, root_dir, add, update, images, markdown, debug):
+@click.option('--debug', '-d', is_flag=True, help='Enable debug mode.')
+@click.option('--check', '-chk', is_flag=True, help='Check translated files for errors and retry translation if needed.')
+def main(language_codes, root_dir, add, update, images, markdown, debug, check):
     """
     CLI for translating project files.
 
     Usage examples:
-    
+
     1. Default behavior (add new translations without deleting existing ones):
        translate -l "ko"
        translate -l "es fr de" -r "./my_project"
@@ -34,6 +37,15 @@ def main(language_codes, root_dir, add, update, images, markdown, debug):
 
     5. Add new markdown translations for Korean without affecting other translations:
        translate -l "ko" -md -a
+
+    6. Check translated files for errors and retry translations if necessary:
+       translate -l "ko" -chk
+
+    7. Check translated files for errors and retry translations (only markdown):
+       translate -l "ko" -chk -md
+
+    8. Check translated files for errors and retry translations (only images):
+       translate -l "ko" -chk -img
 
     Debug mode example:
     - translate -l "ko" -d: Enable debug logging.
@@ -80,10 +92,15 @@ def main(language_codes, root_dir, add, update, images, markdown, debug):
     # Initialize ProjectTranslator
     translator = ProjectTranslator(language_codes, root_dir)
 
-    # Call translate_project
-    translator.translate_project(images=images, markdown=markdown, update=update)
+    if check:
+        # Call check_and_retry_translations if --check is passed
+        click.echo(f"Checking translated files for errors in {language_codes}...")
+        asyncio.run(translator.check_and_retry_translations())
+    else:
+        # Call translate_project
+        translator.translate_project(images=images, markdown=markdown, update=update)
 
-    click.echo(f"Project translation completed for languages: {language_codes}")
+    logger.info(f"Project translation completed for languages: {language_codes}")
 
 if __name__ == '__main__':
     main()

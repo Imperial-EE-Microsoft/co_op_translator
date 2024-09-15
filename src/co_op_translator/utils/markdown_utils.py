@@ -34,7 +34,10 @@ def generate_prompt_template(output_lang: str, document_chunk: str, is_rtl: bool
     else:
         prompt = f"""
         Translate the following markdown file to {output_lang}.
+        This file is written in Markdown format. Do not treat this as XML or HTML.
+        Ensure that the Markdown syntax (e.g., headers, lists, links, and images) is preserved.
         Make sure the translation does not sound too literal. Make sure you translate comments as well.
+        Do not translate  any XML or HTML tags.
         Do not translate any [!NOTE], [!WARNING], [!TIP], [!IMPORTANT], or [!CAUTION].
         Do not translate any entities, such as variable names, function names, or class names, but keep them in the file.
         Do not translate any urls or paths, but keep them in the file.
@@ -147,6 +150,43 @@ def process_markdown(content: str, max_tokens=4096, encoding='o200k_base') -> li
 
     return chunks
 
+def process_markdown_with_many_links(content: str, max_links) -> list:
+    """
+    Process markdown document by splitting it into chunks where each chunk contains max_links or fewer links.
+
+    Args:
+        content (str): The markdown content.
+        max_links (int): Maximum number of links allowed per chunk.
+
+    Returns:
+        list: List of markdown chunks to process.
+    """
+    lines = content.split("\n")
+    chunks = []
+    current_chunk = ""
+    current_links = 0
+
+    for line in lines:
+        # Count the links in the current line
+        line_links = count_links_in_markdown(line)
+        
+        # If adding this line would exceed the max_links, start a new chunk
+        if current_links + line_links > max_links:
+            # Save the current chunk and reset the counters
+            chunks.append(current_chunk.strip())
+            current_chunk = line + "\n"
+            current_links = line_links
+        else:
+            # Add the line to the current chunk and update the link counter
+            current_chunk += line + "\n"
+            current_links += line_links
+
+    # Add the last chunk if there's any remaining content
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+
+    return chunks
+
 def update_image_link(md_file_path: Path, markdown_string: str, language_code: str, root_dir: Path) -> str:
     logger.info("UPDATING IMAGE LINKS")
     pattern = r'!\[(.*?)\]\((.*?)\)'  # Capture both alt text and link
@@ -161,34 +201,59 @@ def update_image_link(md_file_path: Path, markdown_string: str, language_code: s
             logger.info(f"Skipped {link} as it is a URL")
             continue  # Skip web URLs
 
-        # Extract the path without query parameters
         path = parsed_url.path
         original_filename, file_ext = os.path.splitext(os.path.basename(path))
 
         if file_ext in SUPPORTED_IMAGE_EXTENSIONS:
             logger.info("This is an image")
 
-            # Get the actual image path based on the markdown file path and the image link
-            actual_image_path = get_actual_image_path(link, md_file_path)
-            logger.info(f"Actual image path resolved: {actual_image_path}")
+            try:
+                actual_image_path = get_actual_image_path(link, md_file_path)
+                logger.info(f"Actual image path resolved: {actual_image_path}")
 
-            # Determine the translated markdown file's path and translated image path
-            translated_md_dir = translations_dir / language_code / md_file_path.relative_to(root_dir).parent
+                translated_md_dir = translations_dir / language_code / md_file_path.relative_to(root_dir).parent
+                rel_path = os.path.relpath(translated_images_dir, translated_md_dir)
 
-            # Calculate the relative path between translated markdown file and translated image
-            rel_path = os.path.relpath(translated_images_dir, translated_md_dir)
+                new_filename = generate_translated_filename(actual_image_path, language_code, root_dir)
+                updated_link = os.path.join(rel_path, new_filename).replace(os.path.sep, '/')
 
-            # Construct the new image path
-            new_filename = generate_translated_filename(actual_image_path, language_code, root_dir)
-            updated_link = os.path.join(rel_path, new_filename).replace(os.path.sep, '/')
+                old_image_markup = f'![{alt_text}]({link})'
+                new_image_markup = f'![{alt_text}]({updated_link})'
+                markdown_string = markdown_string.replace(old_image_markup, new_image_markup)
 
-            # Replace the image link in the markdown
-            old_image_markup = f'![{alt_text}]({link})'
-            new_image_markup = f'![{alt_text}]({updated_link})'
-            markdown_string = markdown_string.replace(old_image_markup, new_image_markup)
+                logger.info(f"Updated markdown_string: {markdown_string}")
 
-            logger.info(f"Updated markdown_string: {markdown_string}")
+            except Exception as e:
+                logger.error(f"Error processing image {link}: {e}")
+                continue  # Skip to next image if there's an issue
         else:
             logger.info(f"File {link} is not an image. Skipping...")
 
     return markdown_string
+
+
+def compare_line_breaks(original_text, translated_text):
+    """
+    Compare the number of line breaks in the original and translated text
+    to determine if the format is broken.
+    """
+    original_line_breaks = original_text.count('\n')
+    translated_line_breaks = translated_text.count('\n')
+
+    # If the difference in line breaks exceeds a threshold (e.g., 5-6 lines),
+    # consider the translation as failed
+    if abs(original_line_breaks - translated_line_breaks) > 5:  # Allow a margin for disclaimer
+        return True
+    return False
+
+def count_links_in_markdown(content: str) -> int:
+    """
+    Count the number of links in a markdown document.
+    Args:
+        content (str): The markdown content.
+    Returns:
+        int: The number of links in the content.
+    """
+    # Regex to match markdown links and image links
+    link_pattern = re.compile(r"\[.*?\]\(.*?\)")
+    return len(link_pattern.findall(content))
