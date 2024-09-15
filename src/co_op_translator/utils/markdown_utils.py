@@ -195,3 +195,18 @@ def update_image_link(md_file_path: Path, markdown_string: str, language_code: s
             logger.info(f"File {link} is not an image. Skipping...")
 
     return markdown_string
+
+def compare_line_breaks(original_text, translated_text):
+    """
+    Compare the number of line breaks in the original and translated text
+    to determine if the format is broken.
+    """
+    original_line_breaks = original_text.count('\n')
+    translated_line_breaks = translated_text.count('\n')
+
+    # If the difference in line breaks exceeds a threshold (e.g., 5-6 lines),
+    # consider the translation as failed
+    if abs(original_line_breaks - translated_line_breaks) > 5:  # Allow a margin for disclaimer
+        return True
+    return False
+

@@ -9,7 +9,8 @@ from co_op_translator.translators import text_translator, image_translator, mark
 from co_op_translator.config.base_config import Config
 from co_op_translator.config.constants import SUPPORTED_IMAGE_EXTENSIONS, EXCLUDED_DIRS
 from co_op_translator.utils.file_utils import read_input_file, handle_empty_document, get_filename_and_extension, filter_files, reset_translation_directories, generate_translated_filename, delete_translated_images_by_language_code, delete_translated_markdown_files_by_language_code
-from co_op_translator.utils.task_utils import worker  # Import worker function
+from co_op_translator.utils.task_utils import worker
+from co_op_translator.utils.markdown_utils import compare_line_breaks
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,15 @@ class ProjectTranslator:
                 handle_empty_document(file_path, output_file)
                 return
 
+            # First attempt at translation
             translated_content = await self.markdown_translator.translate_markdown(document, language_code, file_path)
+
+            # Check if translation format is broken (e.g., line breaks mismatch)
+            if compare_line_breaks(document, translated_content):
+                logger.warning(f"Translation failed for {file_path}. Retrying...")
+                # Retry translation
+                translated_content = await self.markdown_translator.translate_markdown(document, language_code, file_path)
+
             relative_path = file_path.relative_to(self.root_dir)
             translated_path = self.translations_dir / language_code / relative_path
             translated_path.parent.mkdir(parents=True, exist_ok=True)
@@ -93,11 +102,11 @@ class ProjectTranslator:
     async def process_api_requests(self, tasks, task_desc):
         """
         Process API requests using a queue system for better resource management.
-
-        Args:
-            tasks (list): List of coroutine tasks to process.
-            task_desc (str): Description for the progress bar.
         """
+        if not tasks:  # No tasks to process
+            logger.warning("No tasks available for processing.")
+            return
+
         task_queue = asyncio.Queue()
 
         # Step 1: Populate the queue with tasks
@@ -105,7 +114,7 @@ class ProjectTranslator:
             task_queue.put_nowait(task)
 
         # Step 2: Create a progress bar
-        with tqdm(total=len(tasks), desc=task_desc) as progress_bar:  # Use tqdm for async progress
+        with tqdm(total=len(tasks), desc=task_desc) as progress_bar:
             # Step 3: Create worker tasks to process the queue
             workers = [asyncio.create_task(worker(task_queue, progress_bar)) for _ in range(5)]
 
@@ -147,8 +156,12 @@ class ProjectTranslator:
                     logger.info(f"Translating markdown file: {md_file_path} for language: {language_code}")
                     tasks.append(self.translate_markdown(md_file_path, language_code))
 
-        # Step 3: Process markdown translations using API request queue
-        await self.process_api_requests(tasks, "Translating markdown files")
+        if tasks:  # Check if there are tasks to process
+            # Step 3: Process markdown translations using API request queue
+            await self.process_api_requests(tasks, "Translating markdown files")
+        else:
+            logger.warning("No markdown files found for translation.")
+
 
     async def translate_all_image_files(self, update=False):
         """
