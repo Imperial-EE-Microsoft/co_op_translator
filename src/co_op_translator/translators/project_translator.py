@@ -237,3 +237,21 @@ class ProjectTranslator:
             update (bool): Whether to update existing translations.
         """
         asyncio.run(self.translate_project_async(images=images, markdown=markdown, update=update))
+
+    async def check_and_retry_translations(self):
+        """
+        Check translated files for errors and retry translation if needed.
+        """
+        for language_code in self.language_codes:
+            # For each language, check translated markdown files
+            markdown_files = filter_files(self.root_dir, EXCLUDED_DIRS)
+            for md_file_path in markdown_files:
+                md_file_path = Path(md_file_path).resolve()
+                if md_file_path.suffix == '.md':
+                    translated_content = read_input_file(md_file_path)
+                    original_content = read_input_file(self.root_dir / md_file_path.relative_to(self.translations_dir / language_code))
+
+                    # Check if line breaks are mismatched
+                    if compare_line_breaks(original_content, translated_content):
+                        logger.warning(f"Detected formatting issue in {md_file_path}. Retrying translation...")
+                        await self.translate_markdown(md_file_path, language_code)
