@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 import logging
 from co_op_translator.config.constants import SUPPORTED_IMAGE_EXTENSIONS
-from co_op_translator.utils.file_utils import generate_translated_filename, get_actual_image_path
+from co_op_translator.utils.file_utils import generate_translated_filename, get_actual_image_path, get_filename_and_extension
 
 logger = logging.getLogger(__name__)
 
@@ -27,17 +27,13 @@ def generate_prompt_template(output_lang: str, document_chunk: str, is_rtl: bool
         str: The generated translation prompt.
     """
 
-    # Check if there is only one line in the document
     if len(document_chunk.split("\n")) == 1:
-        # Generate prompt for single line translation
         prompt = f"Translate the following text to {output_lang}. NEVER ADD ANY EXTRA CONTENT OUTSIDE THE TRANSLATION. TRANSLATE ONLY WHAT IS GIVEN TO YOU.. MAINTAIN MARKDOWN FORMAT\n\n{document_chunk}"
     else:
         prompt = f"""
         Translate the following markdown file to {output_lang}.
-        This file is written in Markdown format. Do not treat this as XML or HTML.
-        Ensure that the Markdown syntax (e.g., headers, lists, links, and images) is preserved.
         Make sure the translation does not sound too literal. Make sure you translate comments as well.
-        Do not translate  any XML or HTML tags.
+        This file is written in Markdown format. Do not treat this as XML or HTML.
         Do not translate any [!NOTE], [!WARNING], [!TIP], [!IMPORTANT], or [!CAUTION].
         Do not translate any entities, such as variable names, function names, or class names, but keep them in the file.
         Do not translate any urls or paths, but keep them in the file.
@@ -48,7 +44,6 @@ def generate_prompt_template(output_lang: str, document_chunk: str, is_rtl: bool
     else:
         prompt += "Please write the output from left to right.\n"
 
-    # Append the actual document chunk to be translated
     prompt += "\n" + document_chunk
 
     return prompt
@@ -167,50 +162,57 @@ def process_markdown_with_many_links(content: str, max_links) -> list:
     current_links = 0
 
     for line in lines:
-        # Count the links in the current line
+
         line_links = count_links_in_markdown(line)
         
-        # If adding this line would exceed the max_links, start a new chunk
         if current_links + line_links > max_links:
-            # Save the current chunk and reset the counters
             chunks.append(current_chunk.strip())
             current_chunk = line + "\n"
             current_links = line_links
         else:
-            # Add the line to the current chunk and update the link counter
             current_chunk += line + "\n"
             current_links += line_links
 
-    # Add the last chunk if there's any remaining content
     if current_chunk:
         chunks.append(current_chunk.strip())
 
     return chunks
 
-def update_image_link(md_file_path: Path, markdown_string: str, language_code: str, root_dir: Path) -> str:
-    logger.info("UPDATING IMAGE LINKS")
-    pattern = r'!\[(.*?)\]\((.*?)\)'  # Capture both alt text and link
-    matches = re.findall(pattern, markdown_string)
+def update_links(md_file_path: Path, markdown_string: str, language_code: str, root_dir: Path) -> str:
+    logger.info("Updating links in the markdown file")
 
     translations_dir = root_dir / 'translations'
     translated_images_dir = root_dir / 'translated_images'
 
-    for alt_text, link in matches:
+    # Update image links
+    markdown_string = update_image_links(markdown_string, md_file_path, language_code, translations_dir, translated_images_dir, root_dir)
+
+    # Update non-image file links
+    markdown_string = update_file_links(markdown_string, md_file_path, language_code, translations_dir, root_dir)
+
+    # Update translation links
+    markdown_string = update_translation_links(markdown_string, md_file_path, language_code, translations_dir, root_dir)
+
+    return markdown_string
+
+def update_image_links(markdown_string: str, md_file_path: Path, language_code: str, translations_dir: Path, translated_images_dir: Path, root_dir: Path) -> str:
+    image_pattern = r'!\[(.*?)\]\((.*?)\)'
+    image_matches = re.findall(image_pattern, markdown_string)
+
+    for alt_text, link in image_matches:
         parsed_url = urlparse(link)
-        if parsed_url.scheme in ('http', 'https'):
-            logger.info(f"Skipped {link} as it is a URL")
-            continue  # Skip web URLs
+        if parsed_url.scheme in ('mailto', 'http', 'https') or '@' in link or link.endswith(('.com', '.org', '.net')):
+            logger.info(f"Skipped {link} as it is an email or web URL")
+            continue
 
         path = parsed_url.path
-        original_filename, file_ext = os.path.splitext(os.path.basename(path))
+        original_filename, file_ext = get_filename_and_extension(path)
 
         if file_ext in SUPPORTED_IMAGE_EXTENSIONS:
-            logger.info("This is an image")
+            logger.info(f"Processing image file {link}")
 
             try:
                 actual_image_path = get_actual_image_path(link, md_file_path)
-                logger.info(f"Actual image path resolved: {actual_image_path}")
-
                 translated_md_dir = translations_dir / language_code / md_file_path.relative_to(root_dir).parent
                 rel_path = os.path.relpath(translated_images_dir, translated_md_dir)
 
@@ -221,16 +223,87 @@ def update_image_link(md_file_path: Path, markdown_string: str, language_code: s
                 new_image_markup = f'![{alt_text}]({updated_link})'
                 markdown_string = markdown_string.replace(old_image_markup, new_image_markup)
 
-                logger.info(f"Updated markdown_string: {markdown_string}")
+                logger.info(f"Updated image markdown: {new_image_markup}")
 
             except Exception as e:
                 logger.error(f"Error processing image {link}: {e}")
-                continue  # Skip to next image if there's an issue
-        else:
-            logger.info(f"File {link} is not an image. Skipping...")
+                logger.info(f"Skipping image {link}")
+                continue
 
     return markdown_string
 
+def update_file_links(markdown_string: str, md_file_path: Path, language_code: str, translations_dir: Path, root_dir: Path) -> str:
+    file_pattern = r'\[(.*?)\]\((.*?)\)'
+    file_matches = re.findall(file_pattern, markdown_string)
+
+    for alt_text, link in file_matches:
+        parsed_url = urlparse(link)
+        if parsed_url.scheme in ('mailto', 'http', 'https') or '@' in link or link.endswith(('.com', '.org', '.net')):
+            logger.info(f"Skipped {link} as it is an email or web URL")
+            continue
+
+        path = parsed_url.path
+        original_filename, file_ext = get_filename_and_extension(path)
+
+        if file_ext in SUPPORTED_IMAGE_EXTENSIONS:
+            logger.info(f"Skipping image file {link}")
+            continue
+
+        if file_ext == ".md":
+            logger.info(f"Skipping markdown file {link}")
+            continue
+
+        logger.info(f"Processing non-image, non-markdown file {link}")
+        try:
+            translated_md_dir = translations_dir / language_code / md_file_path.relative_to(root_dir).parent
+            original_linked_file_path = (md_file_path.parent / path).resolve()
+
+            updated_link = os.path.relpath(original_linked_file_path, translated_md_dir).replace(os.path.sep, '/')
+
+            old_file_markup = f'[{alt_text}]({link})'
+            new_file_markup = f'[{alt_text}]({updated_link})'
+            markdown_string = markdown_string.replace(old_file_markup, new_file_markup)
+
+            logger.info(f"Updated non-image file markdown: {new_file_markup}")
+
+        except Exception as e:
+            logger.error(f"Error processing non-image file {link}: {e}")
+            continue
+
+    return markdown_string
+
+def update_translation_links(markdown_string: str, md_file_path: Path, language_code: str, translations_dir: Path, root_dir: Path) -> str:
+    logger.info("Updating translation links in the markdown file")
+
+    translation_link_pattern = r'(\[.*?\])\((?:\.?/)?translations/([a-zA-Z\-]+)/README\.md\)'
+
+    def replace_link(match):
+        alt_text_with_brackets = match.group(1)
+        other_language_code = match.group(2)
+        logger.info(f"Found language code in link: {other_language_code} with alt text '{alt_text_with_brackets}'")
+
+        other_translated_md_path = (translations_dir / other_language_code / 'README.md').resolve()
+        logger.debug(f"Other translated markdown path (absolute): {other_translated_md_path}")
+
+        current_translated_md_path = (translations_dir / language_code / 'README.md').resolve()
+        current_md_dir = current_translated_md_path.parent
+        logger.debug(f"Current markdown directory (current_md_dir): {current_md_dir}")
+
+        try:
+            relative_dir = os.path.relpath(other_translated_md_path.parent, current_md_dir).replace(os.path.sep, '/')
+            relative_path_to_translation = f"{relative_dir}/README.md"
+            logger.info(f"Relative path to {other_language_code} translation: {relative_path_to_translation}")
+
+            new_translation_link_markup = f'{alt_text_with_brackets}({relative_path_to_translation})'
+            logger.info(f"Updated translation link markdown: {new_translation_link_markup}")
+            return new_translation_link_markup
+        except Exception as e:
+            logger.error(f"Error updating translation links for {other_language_code}: {e}")
+            return match.group(0)
+
+    markdown_string = re.sub(translation_link_pattern, replace_link, markdown_string)
+
+    return markdown_string
 
 def compare_line_breaks(original_text, translated_text):
     """
@@ -240,8 +313,6 @@ def compare_line_breaks(original_text, translated_text):
     original_line_breaks = original_text.count('\n')
     translated_line_breaks = translated_text.count('\n')
 
-    # If the difference in line breaks exceeds a threshold (e.g., 5-6 lines),
-    # consider the translation as failed
     if abs(original_line_breaks - translated_line_breaks) > 5:  # Allow a margin for disclaimer
         return True
     return False
@@ -254,6 +325,6 @@ def count_links_in_markdown(content: str) -> int:
     Returns:
         int: The number of links in the content.
     """
-    # Regex to match markdown links and image links
+
     link_pattern = re.compile(r"\[.*?\]\(.*?\)")
     return len(link_pattern.findall(content))
