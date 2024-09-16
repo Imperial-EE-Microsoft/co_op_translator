@@ -27,9 +27,7 @@ def generate_prompt_template(output_lang: str, document_chunk: str, is_rtl: bool
         str: The generated translation prompt.
     """
 
-    # Check if there is only one line in the document
     if len(document_chunk.split("\n")) == 1:
-        # Generate prompt for single line translation
         prompt = f"Translate the following text to {output_lang}. NEVER ADD ANY EXTRA CONTENT OUTSIDE THE TRANSLATION. TRANSLATE ONLY WHAT IS GIVEN TO YOU.. MAINTAIN MARKDOWN FORMAT\n\n{document_chunk}"
     else:
         prompt = f"""
@@ -45,7 +43,6 @@ def generate_prompt_template(output_lang: str, document_chunk: str, is_rtl: bool
     else:
         prompt += "Please write the output from left to right.\n"
 
-    # Append the actual document chunk to be translated
     prompt += "\n" + document_chunk
 
     return prompt
@@ -164,21 +161,17 @@ def process_markdown_with_many_links(content: str, max_links) -> list:
     current_links = 0
 
     for line in lines:
-        # Count the links in the current line
+
         line_links = count_links_in_markdown(line)
         
-        # If adding this line would exceed the max_links, start a new chunk
         if current_links + line_links > max_links:
-            # Save the current chunk and reset the counters
             chunks.append(current_chunk.strip())
             current_chunk = line + "\n"
             current_links = line_links
         else:
-            # Add the line to the current chunk and update the link counter
             current_chunk += line + "\n"
             current_links += line_links
 
-    # Add the last chunk if there's any remaining content
     if current_chunk:
         chunks.append(current_chunk.strip())
 
@@ -193,7 +186,6 @@ def update_links(md_file_path: Path, markdown_string: str, language_code: str, r
     translations_dir = root_dir / 'translations'
     translated_images_dir = root_dir / 'translated_images'
 
-    # Process image links
     image_matches = re.findall(image_pattern, markdown_string)
     for alt_text, link in image_matches:
         parsed_url = urlparse(link)
@@ -227,7 +219,6 @@ def update_links(md_file_path: Path, markdown_string: str, language_code: str, r
                 logger.error(f"Error processing image {link}: {e}")
                 continue
 
-    # Process other file links (non-image files)
     file_matches = re.findall(file_pattern, markdown_string)
     for alt_text, link in file_matches:
         parsed_url = urlparse(link)
@@ -238,7 +229,6 @@ def update_links(md_file_path: Path, markdown_string: str, language_code: str, r
         path = parsed_url.path
         original_filename, file_ext = get_filename_and_extension(path)
 
-        # Skip markdown files as they are being translated
         if file_ext == ".md":
             logger.info(f"Skipped {link} as it is a markdown file")
             continue
@@ -263,6 +253,35 @@ def update_links(md_file_path: Path, markdown_string: str, language_code: str, r
 
     return markdown_string
 
+def update_readme_links_to_translations(md_file_path: Path, markdown_string: str, root_dir: Path) -> str:
+    """
+    Update links in the README.md to point to translated versions of the README file.
+    
+    Args:
+        md_file_path (Path): The path to the markdown file.
+        markdown_string (str): The translated markdown content.
+        root_dir (Path): The root directory of the project.
+        language_code (str): The current language code of the translation.
+    
+    Returns:
+        str: Updated markdown content with links to the correct translation paths.
+    """
+    logger.info("Updating links in the README.md file")
+
+    translation_link_pattern = r'/translations/([a-zA-Z\-]+)/README\.md'
+
+    def replace_link(match):
+        target_language = match.group(1)
+        translated_md_dir = root_dir / 'translations' / target_language
+
+        rel_path_to_translation = os.path.relpath(translated_md_dir, md_file_path.parent)
+
+        return f'{rel_path_to_translation}/README.md'
+
+    updated_content = re.sub(translation_link_pattern, replace_link, markdown_string)
+
+    return updated_content
+
 def compare_line_breaks(original_text, translated_text):
     """
     Compare the number of line breaks in the original and translated text
@@ -271,8 +290,6 @@ def compare_line_breaks(original_text, translated_text):
     original_line_breaks = original_text.count('\n')
     translated_line_breaks = translated_text.count('\n')
 
-    # If the difference in line breaks exceeds a threshold (e.g., 5-6 lines),
-    # consider the translation as failed
     if abs(original_line_breaks - translated_line_breaks) > 5:  # Allow a margin for disclaimer
         return True
     return False
@@ -285,6 +302,6 @@ def count_links_in_markdown(content: str) -> int:
     Returns:
         int: The number of links in the content.
     """
-    # Regex to match markdown links and image links
+
     link_pattern = re.compile(r"\[.*?\]\(.*?\)")
     return len(link_pattern.findall(content))

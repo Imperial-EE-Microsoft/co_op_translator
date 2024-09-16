@@ -4,7 +4,7 @@ from pathlib import Path
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.prompt_template.prompt_template_config import PromptTemplateConfig
-from co_op_translator.utils.markdown_utils import process_markdown, update_links, generate_prompt_template, count_links_in_markdown, process_markdown_with_many_links
+from co_op_translator.utils.markdown_utils import process_markdown, update_links, generate_prompt_template, count_links_in_markdown, process_markdown_with_many_links, update_readme_links_to_translations
 from co_op_translator.config.base_config import Config
 from co_op_translator.config.font_config import FontConfig
 import time
@@ -72,9 +72,13 @@ class MarkdownTranslator:
 
         updated_content = update_links(md_file_path, translated_content, language_code, self.root_dir)
 
+        if md_file_path.name.lower() == "readme.md":
+            logger.info(f"Processing README.md, updating links to point to translations.")
+            updated_content = update_readme_links_to_translations(md_file_path, translated_content, self.root_dir)
+
         disclaimer = await self.generate_disclaimer(language_code)
         updated_content += "\n\n" + disclaimer
-        
+
         return updated_content
 
     async def _run_prompts(self, prompts):
