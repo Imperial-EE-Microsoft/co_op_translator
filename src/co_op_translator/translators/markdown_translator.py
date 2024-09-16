@@ -4,7 +4,7 @@ from pathlib import Path
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.prompt_template.prompt_template_config import PromptTemplateConfig
-from co_op_translator.utils.markdown_utils import process_markdown, update_image_link, generate_prompt_template, count_links_in_markdown, process_markdown_with_many_links
+from co_op_translator.utils.markdown_utils import process_markdown, update_links, generate_prompt_template, count_links_in_markdown, process_markdown_with_many_links
 from co_op_translator.config.base_config import Config
 from co_op_translator.config.font_config import FontConfig
 import time
@@ -53,7 +53,7 @@ class MarkdownTranslator:
             md_file_path (str | Path): The file path of the markdown file.
 
         Returns:
-            str: The translated content with updated image links and a disclaimer appended.
+            str: The translated content with updated links and a disclaimer appended.
         """
         md_file_path = Path(md_file_path)
         link_limit = 30
@@ -70,7 +70,7 @@ class MarkdownTranslator:
         results = await self._run_prompts(prompts)
         translated_content = "\n".join(results)
 
-        updated_content = update_image_link(md_file_path, translated_content, language_code, self.root_dir)
+        updated_content = update_links(md_file_path, translated_content, language_code, self.root_dir)
 
         disclaimer = await self.generate_disclaimer(language_code)
         updated_content += "\n\n" + disclaimer

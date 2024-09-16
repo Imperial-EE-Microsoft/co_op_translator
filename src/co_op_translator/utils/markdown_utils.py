@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 import logging
 from co_op_translator.config.constants import SUPPORTED_IMAGE_EXTENSIONS
-from co_op_translator.utils.file_utils import generate_translated_filename, get_actual_image_path
+from co_op_translator.utils.file_utils import generate_translated_filename, get_actual_image_path, get_filename_and_extension
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +34,7 @@ def generate_prompt_template(output_lang: str, document_chunk: str, is_rtl: bool
     else:
         prompt = f"""
         Translate the following markdown file to {output_lang}.
-        This file is written in Markdown format. Do not treat this as XML or HTML.
-        Ensure that the Markdown syntax (e.g., headers, lists, links, and images) is preserved.
         Make sure the translation does not sound too literal. Make sure you translate comments as well.
-        Do not translate  any XML or HTML tags.
         Do not translate any [!NOTE], [!WARNING], [!TIP], [!IMPORTANT], or [!CAUTION].
         Do not translate any entities, such as variable names, function names, or class names, but keep them in the file.
         Do not translate any urls or paths, but keep them in the file.
@@ -187,25 +184,28 @@ def process_markdown_with_many_links(content: str, max_links) -> list:
 
     return chunks
 
-def update_image_link(md_file_path: Path, markdown_string: str, language_code: str, root_dir: Path) -> str:
-    logger.info("UPDATING IMAGE LINKS")
-    pattern = r'!\[(.*?)\]\((.*?)\)'  # Capture both alt text and link
-    matches = re.findall(pattern, markdown_string)
+def update_links(md_file_path: Path, markdown_string: str, language_code: str, root_dir: Path) -> str:
+    logger.info("Updating links in the markdown file")
+
+    image_pattern = r'!\[(.*?)\]\((.*?)\)'
+    file_pattern = r'\[(.*?)\]\((.*?)\)'
 
     translations_dir = root_dir / 'translations'
     translated_images_dir = root_dir / 'translated_images'
 
-    for alt_text, link in matches:
+    # Process image links
+    image_matches = re.findall(image_pattern, markdown_string)
+    for alt_text, link in image_matches:
         parsed_url = urlparse(link)
         if parsed_url.scheme in ('http', 'https'):
-            logger.info(f"Skipped {link} as it is a URL")
-            continue  # Skip web URLs
+            logger.info(f"Skipped {link} as it is a web URL")
+            continue
 
         path = parsed_url.path
-        original_filename, file_ext = os.path.splitext(os.path.basename(path))
+        original_filename, file_ext = get_filename_and_extension(path)
 
         if file_ext in SUPPORTED_IMAGE_EXTENSIONS:
-            logger.info("This is an image")
+            logger.info(f"Processing image file {link}")
 
             try:
                 actual_image_path = get_actual_image_path(link, md_file_path)
@@ -221,16 +221,47 @@ def update_image_link(md_file_path: Path, markdown_string: str, language_code: s
                 new_image_markup = f'![{alt_text}]({updated_link})'
                 markdown_string = markdown_string.replace(old_image_markup, new_image_markup)
 
-                logger.info(f"Updated markdown_string: {markdown_string}")
+                logger.info(f"Updated image markdown string: {markdown_string}")
 
             except Exception as e:
                 logger.error(f"Error processing image {link}: {e}")
-                continue  # Skip to next image if there's an issue
-        else:
-            logger.info(f"File {link} is not an image. Skipping...")
+                continue
+
+    # Process other file links (non-image files)
+    file_matches = re.findall(file_pattern, markdown_string)
+    for alt_text, link in file_matches:
+        parsed_url = urlparse(link)
+        if parsed_url.scheme in ('http', 'https'):
+            logger.info(f"Skipped {link} as it is a web URL")
+            continue
+
+        path = parsed_url.path
+        original_filename, file_ext = get_filename_and_extension(path)
+
+        # Skip markdown files as they are being translated
+        if file_ext == ".md":
+            logger.info(f"Skipped {link} as it is a markdown file")
+            continue
+
+        logger.info(f"Processing non-image file {link}")
+
+        try:
+            translated_md_dir = translations_dir / language_code / md_file_path.relative_to(root_dir).parent
+            original_linked_file_path = (md_file_path.parent / path).resolve()
+
+            updated_link = os.path.relpath(original_linked_file_path, translated_md_dir).replace(os.path.sep, '/')
+
+            old_file_markup = f'[{alt_text}]({link})'
+            new_file_markup = f'[{alt_text}]({updated_link})'
+            markdown_string = markdown_string.replace(old_file_markup, new_file_markup)
+
+            logger.info(f"Updated non-image file markdown string: {new_file_markup}")
+
+        except Exception as e:
+            logger.error(f"Error processing non-image file {link}: {e}")
+            continue
 
     return markdown_string
-
 
 def compare_line_breaks(original_text, translated_text):
     """
