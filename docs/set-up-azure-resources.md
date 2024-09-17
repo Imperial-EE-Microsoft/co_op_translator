@@ -11,7 +11,6 @@ If you don't already have an Azure account, you'll need to create one.
 3. **Follow the on-screen instructions** to create your account.
    - Provide your personal details and contact information.
    - **Verification:** You'll need to verify your identity using a credit card or phone number.
-   - **Note:** Microsoft offers a free trial with \$200 credit for the first 30 days.
 
 ### Create an Azure Computer Vision resource
 
@@ -72,3 +71,27 @@ If you don't already have an Azure account, you'll need to create one.
 1. Select **Create**.
 
     ![Select Create.](../imgs/create-azure-openai-complete.png)
+
+### Deploy Azure OpenAI models
+
+1. Navigate to the Azure OpenAI resource that you created.
+
+1. Select **Go to Azure OpenAI Studio** from the navigation menu.
+
+    ![Select Go to Azure OpenAI Studio from the navigation menu.](../imgs/go-to-azureopenai-studio.png)
+
+1. Inside Azure OpenAI Studio, select **Deployments** from the left side tab.
+
+    ![Select Deployments.](../imgs/select-azureopenai-deployments.png)
+
+1. Select **+ Create new deployment** from the navigation menu to create a new **gpt-4o** deployment.
+
+    ![Create model.](../imgs/create-azureopenai-model.png)
+
+1. Perform the following tasks:
+
+    - For the model, select **gpt-4o**.
+    - For the **Model version**, select the version you'd like to use.
+    - For the **Deployment name**, add a name that's unique to this cloud instance. For example, **gpt-4o**.
+
+1. Select **Create**.
