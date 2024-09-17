@@ -1,64 +1,52 @@
-# Co Op Translator: Easily automate multilingual translations for your projects powered by advanced LLM technology
+# Co Op Translator
 
+_Easily automate multilingual translations for your projects powered by advanced LLM technology._
 
-## Setting up the Development Environment
+[![Python package](https://img.shields.io/pypi/v/co-op-translator)](https://pypi.org/project/co-op-translator/)
+[![License: MIT](https://img.shields.io/github/license/Imperial-EE-Microsoft/co_op_translator)](https://github.com/Imperial-EE-Microsoft/co_op_translator/blob/main/LICENSE)
+[![GitHub contributors](https://img.shields.io/github/contributors/Imperial-EE-Microsoft/co_op_translator.svg)](https://GitHub.com/Imperial-EE-Microsoft/co_op_translator/graphs/contributors/)
+[![GitHub issues](https://img.shields.io/github/issues/Imperial-EE-Microsoft/co_op_translator.svg)](https://GitHub.com/Imperial-EE-Microsoft/co_op_translator/issues/)
+[![GitHub pull-requests](https://img.shields.io/github/issues-pr/Imperial-EE-Microsoft/co_op_translator.svg)](https://GitHub.com/Imperial-EE-Microsoft/co_op_translator/pulls/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 
-### Create a virtual environment
+[![GitHub watchers](https://img.shields.io/github/watchers/Imperial-EE-Microsoft/co_op_translator.svg?style=social&label=Watch)](https://GitHub.com/Imperial-EE-Microsoft/co_op_translator/watchers/)
+[![GitHub forks](https://img.shields.io/github/forks/Imperial-EE-Microsoft/co_op_translator.svg?style=social&label=Fork)](https://GitHub.com/Imperial-EE-Microsoft/co_op_translator/network/)
+[![GitHub stars](https://img.shields.io/github/stars/Imperial-EE-Microsoft/co_op_translator?style=social&label=Star)](https://GitHub.com/Imperial-EE-Microsoft/co_op_translator/stargazers/)
 
-1. Type the following command inside your terminal to create a virtual environment named *venv*.
+## Overview
 
-    ```console
-    python -m venv venv
-    ```
+**Co Op Translator** is a Python package designed to automate multilingual translations across all files in your project. Powered by advanced Language Learning Models (LLMs), it simplifies the localization process by providing accurate and efficient translations.
 
-1. Type the following command inside your terminal to activate the virtual environment.
+Co Op Translator scans all your project files and translates all Markdown documents and even text within images found in your folders. This comprehensive approach ensures that every part of your project is accessible to a global audience.
 
-    for Windows
+By integrating Co Op Translator into your workflow, you can:
 
-    ```console
-    venv\Scripts\activate.bat
-    ```
+- **Automate Translations:** Easily translate text in your project files into multiple languages.
+- **Comprehensive Coverage:** Translate all Markdown files and text within images in your project directories.
+- **Advanced LLM Technology:** Utilize cutting-edge language models for high-quality translations.
+- **Simplify Localization:** Streamline the process of localizing your project for international markets.
+- **Easy Integration:** Seamlessly integrate with your existing project setup.
 
-    for Mac / Linux
+Co Op Translator empowers developers to focus on core functionalities while effortlessly managing multilingual support.
 
-    ```console
-    source venv/bin/activate
-    ```
+Here is an example of how Co Op Translator can be used to translate text in images and Markdown files in your project:
 
-> [!NOTE]
->
-> If it worked, you should see *(venv)* before the command prompt.
-> Remember to activate the virtual environment every time you work on the project by running from the repository's root directory.
+![Example](/imgs/ex.png)
 
-### Install the required packages
+## Getting started with Co Op Translator
 
-1. Type the following commands inside your terminal to install the required packages.
+### How to Use Co Op Translator
 
-    ```console
-    pip install -r requirements.txt
-    ```
+1. [Set up Azure resources before starting](./docs/set-up-azure-resources.md)
+1. [Create an '.env' file in the root directory](./docs/create-env-file.md)
+1. [Install the Co Op translator package](./docs/install-package.md)
+1. [Use Co Op translator in your project](./docs/use-co-op-translator.md)
 
-### Add environment variables
+### Prerequisites
 
-1. Create an `.env` file in the root directory of your project by copying the provided .env.template file. Fill in the environment variables in the `.env` file as a guide.
-
-1. The environment variables will be automatically loaded when you run any script that imports and executes `base.py` from the `src/config` directory.
-
-### Install the package in editable mode
-
-1. Type the following command inside your terminal to install the package in editable mode:
-
-    ```console
-    pip install -e .
-    ```
-
-## Running Tests
-
-1. To run tests, make sure your virtual environment is activated, then type the following command:
-
-    ```console
-    pytest tests/
-    ```
+- Azure AI Services resource
+- Azure OpenAI resource
+- Python 3.10 or higher
 
 ## Sample notebooks
 

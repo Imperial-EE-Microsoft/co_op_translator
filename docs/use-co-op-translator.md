@@ -1,0 +1,1 @@
+# Use Co Op translator in your project
