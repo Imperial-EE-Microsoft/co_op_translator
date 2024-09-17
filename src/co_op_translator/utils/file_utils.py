@@ -73,37 +73,25 @@ def get_actual_image_path(image_relative_path: str | Path, markdown_file_path: s
 
 def get_unique_id(file_path: str | Path, root_dir: Path) -> str:
     """
-    Generate a unique identifier (hash) for the given file path, relative to the root directory.
-
+    Generate a unique identifier (hash) for the given file path, based on the relative path to the root directory.
+    
     Args:
-        file_path (str | Path): The file path or string data to hash.
-        root_dir (Path): The root directory to which the path should be made relative.
-
+        file_path (str | Path): The file path to hash.
+        root_dir (Path): The root directory to which the file path should be relative.
+    
     Returns:
-        str: A SHA-256 hash of the file path or string.
+        str: A SHA-256 hash of the relative file path.
     """
-    # Ensure file_path and root_dir are strings
     file_path = Path(file_path).resolve()
+    relative_path = file_path.relative_to(root_dir)
 
-    # Normalize the path to remove redundant separators and up-level references
-    normalized_path = os.path.normpath(file_path)
-
-    # Convert backslashes to forward slashes for consistency
-    normalized_path = normalized_path.replace('\\', '/')
-
-    # Log the normalized path for debugging
-    logger.info(f"Normalized file path for hashing: {normalized_path}")
-
-    # Convert the normalized path to bytes and hash it
-    file_path_bytes = normalized_path.encode('utf-8')
-    hash_object = hashlib.sha256()
-    hash_object.update(file_path_bytes)
-    
-    # Generate the hexadecimal digest
+    # Convert the relative path to bytes and hash it
+    relative_path_bytes = str(relative_path).encode('utf-8')
+    hash_object = hashlib.sha256(relative_path_bytes)
     unique_identifier = hash_object.hexdigest()
-    
-    logger.info(f"HASH in GET UNIQUE ID for: {normalized_path} HASH={unique_identifier}")
-    
+
+    logger.info(f"HASH for relative file path: {relative_path} HASH={unique_identifier}")
+
     return unique_identifier
 
 def generate_translated_filename(original_filepath: str | Path, language_code: str, root_dir: Path) -> str:
@@ -203,3 +191,43 @@ def reset_translation_directories(translations_dir: Path, image_dir: Path, langu
     
     image_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"Created translated_images directory: {image_dir}")
+
+def delete_translated_images_by_language_code(language_code: str, image_dir: Path):
+    """
+    Delete all translated images in the given directory that have the specified language code in their filenames.
+
+    Args:
+        language_code (str): The language code to filter files by (e.g., 'ko').
+        image_dir (Path): The directory where translated images are stored (e.g., './translated_images').
+    """
+    image_dir = Path(image_dir)
+    
+    if not image_dir.exists():
+        logger.warning(f"Directory {image_dir} does not exist. No images to delete.")
+        return
+    
+    # Iterate through all files in the directory
+    for image_file in image_dir.iterdir():
+        # Check if the language code is part of the filename
+        if image_file.is_file() and f".{language_code}" in image_file.name:
+            logger.info(f"Deleting image file: {image_file}")
+            image_file.unlink()
+
+def delete_translated_markdown_files_by_language_code(language_code: str, translations_dir: Path):
+    """
+    Delete the entire directory for the specified language code, including all its contents.
+
+    Args:
+        language_code (str): The language code whose folder should be deleted (e.g., 'ko').
+        translations_dir (Path): The directory where translated markdown files are stored.
+    """
+    # Construct the path to the directory for the specific language
+    language_dir = translations_dir / language_code
+
+    if not language_dir.exists():
+        logger.warning(f"Directory {language_dir} does not exist. No markdown files to delete.")
+        return
+
+    # Remove the entire directory and its contents
+    shutil.rmtree(language_dir)
+    logger.info(f"Deleted the directory and all files for language: {language_code}")
