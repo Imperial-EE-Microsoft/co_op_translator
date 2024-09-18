@@ -1,5 +1,9 @@
 # Install the Co Op translator package
 
+The Co-Op Translator is a command-line interface (CLI) tool designed to help you translate all the markdown files and images in your project into multiple languages. This tutorial will guide you through configuring the translator and running it for various use cases.
+
+### Install the Co Op translator package
+
 1. Type the following command inside your terminal to create a virtual environment named *.venv*.
 
     ```console

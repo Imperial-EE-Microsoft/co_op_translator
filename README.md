@@ -47,8 +47,3 @@ Here is an example of how Co Op Translator can be used to translate text in imag
 - Azure AI Services resource
 - Azure OpenAI resource
 - Python 3.10 or higher
-
-## Sample notebooks
-
-- [Getting Started with notebook: basic version](notebooks/notebook_for_microsoft_final.ipynb)
-- [Getting Started with notebook: module version](notebooks/notebook_for_module_project.ipynb)
