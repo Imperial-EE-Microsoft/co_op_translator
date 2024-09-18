@@ -52,7 +52,7 @@ By default, the translator uses the current working directory. If your project i
 translate -l "es fr de" -r "./my_project"
 ```
 
-This command translates the files in ./my_project into Spanish, French, and German.
+This command translates the files in `./my_project` into Spanish, French, and German.
 
 ### 4. Add New Translations Without Deleting Existing Ones
 
@@ -66,7 +66,7 @@ This command will add new translations in Korean without affecting the existing 
 
 ### 5. Updating Translations (Deletes Existing Translations)
 
-To update existing translations (i.e., delete the current translations and replace them with new ones), use the -u option. This will delete all existing translations for the specified languages and re-translate them.
+To update existing translations (i.e., delete the current translations and replace them with new ones), use the `-u` option. This will delete all existing translations for the specified languages and re-translate them.
 
 ```bash
 translate -l "ko" -u
@@ -114,13 +114,14 @@ This command will run the translation in debug mode, providing additional loggin
 
 ### 10. Translating All Languages
 
-If you want to translate the project into all supported languages, use the all keyword. Note: This can be time-consuming for large projects, so the system will ask for confirmation before proceeding.
+If you want to translate the project into all supported languages, use the all keyword.
+
+> [!WARNING]
+> Translating all languages at once can take a significant amount of time depending on the project size. For example, translating the Phi-3 CookBook into Spanish took about 1 hour and 25-30 minutes. Given the scale, it's not practical for one person to handle 20 languages. It's recommended to split the work among multiple contributors, each managing one or two languages, and update translations gradually.
+
 
 ```bash
 translate -l "all"
 ```
 
 This command will translate the project into all available languages. If you proceed, the translation may take a significant amount of time depending on the size of the project.
-
-> [!WARNING]
-> Translating all languages at once can take a significant amount of time depending on the project size. For example, translating the Phi-3 CookBook into Spanish took about 1 hour and 25-30 minutes. Given the scale, it's not practical for one person to handle 20 languages. It's recommended to split the work among multiple contributors, each managing one or two languages, and update translations gradually.
