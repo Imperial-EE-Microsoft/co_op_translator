@@ -1,4 +1,4 @@
-# Co Op Translator
+<!-- # Co Op Translator
 
 _Easily automate multilingual translations for your projects powered by advanced LLM technology._
 
@@ -47,3 +47,9 @@ Here is an example of how Co Op Translator can be used to translate text in imag
 - Azure AI Services resource
 - Azure OpenAI resource
 - Python 3.10 or higher
+-->
+
+## Site Archived 
+
+**NOTE**
+This site has been archived please see [https://github.com/azure/co-op-translator](https://github.com/azure/co-op-translator)
